@@ -1,0 +1,17 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/storage:/app/storage
+      - ./backend/data:/app/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+# PostgreSQL can be added later. This V3 keeps SQLite default so it runs easily on Windows.

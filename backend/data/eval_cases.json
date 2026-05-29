@@ -1,0 +1,22 @@
+[
+  {
+    "query": "什么是RAG",
+    "expected_keyword": "检索增强生成"
+  },
+  {
+    "query": "Agent有什么能力",
+    "expected_keyword": "工具调用"
+  },
+  {
+    "query": "为什么需要Rerank",
+    "expected_keyword": "二次排序"
+  },
+  {
+    "query": "FastAPI是什么",
+    "expected_keyword": "API服务"
+  },
+  {
+    "query": "Token是什么",
+    "expected_keyword": "基本单位"
+  }
+]

@@ -1,0 +1,12 @@
+RAG是什么：RAG是检索增强生成，流程是先将用户问题向量化，再从知识库检索相关内容，最后把检索结果增强到Prompt中交给LLM生成答案。
+Embedding是什么：Embedding是把文本转换成向量的技术，用于计算语义相似度。
+Chroma是什么：Chroma是向量数据库，可以存储文本向量并进行语义相似度检索。
+Agent是什么：Agent是具备工具调用、任务规划、记忆和执行能力的大模型应用系统。
+为什么RAG能减少幻觉：RAG通过检索外部可靠知识，把资料提供给LLM，限制模型基于资料回答，从而降低胡编风险。
+为什么需要Rerank：向量检索通常是粗召回，Rerank用于对候选文档进行二次排序，提高最终上下文质量。
+FastAPI是什么：FastAPI是Python后端框架，常用于构建API服务，支持自动文档和Pydantic数据校验。
+POST请求是什么：POST请求常用于向后端提交数据，例如聊天内容、登录信息、表单数据等。
+Context Window是什么：Context Window是大模型一次请求中能够看到的最大上下文长度。
+Token是什么：Token是大模型处理文本的基本单位，API通常按照输入和输出token收费。
+LangGraph是什么：LangGraph是用于构建有状态、多步骤Agent工作流的框架。
+Function Calling是什么：Function Calling是让大模型根据用户任务选择并调用外部函数或工具的能力。

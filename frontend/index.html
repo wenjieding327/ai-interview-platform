@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Interview Platform V4</title>
+    <style>
+        body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; }
+        .wrap { max-width:1100px; margin:30px auto; }
+        .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .card { background:#fff; border-radius:14px; padding:18px; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+        input, textarea { width:100%; padding:10px; margin:8px 0 12px; box-sizing:border-box; border:1px solid #ddd; border-radius:8px; }
+        button { padding:10px 16px; border:0; background:#111; color:#fff; border-radius:8px; cursor:pointer; margin-right:8px; }
+        pre { background:#111; color:#0f0; padding:16px; border-radius:10px; max-height:460px; overflow:auto; white-space:pre-wrap; }
+        h1 { margin-bottom:8px; }
+        .muted { color:#666; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>AI Interview Training Platform V4</h1>
+    <p class="muted">Local-max MVP: Auth + RAG + Rerank + Stateful Agent + Evaluation + Logs + Cache</p>
+
+    <div class="grid">
+        <div class="card">
+            <h2>Auth</h2>
+            <input id="email" value="test@test.com">
+            <input id="password" value="123456" type="password">
+            <button onclick="register()">Register</button>
+            <button onclick="login()">Login</button>
+            <p class="muted">Token: <span id="token"></span></p>
+        </div>
+
+        <div class="card">
+            <h2>Start Interview</h2>
+            <input id="role" value="LLM应用开发实习生">
+            <button onclick="startInterview()">Start</button>
+            <p>Session ID: <span id="sessionId"></span></p>
+        </div>
+
+        <div class="card">
+            <h2>Session Step</h2>
+            <textarea id="currentQuestion" rows="4" placeholder="Current question"></textarea>
+            <textarea id="answer" rows="5" placeholder="Your answer"></textarea>
+            <button onclick="sessionStep()">Submit Answer</button>
+            <button onclick="getSession()">View Session</button>
+            <button onclick="finishSession()">Finish</button>
+        </div>
+
+        <div class="card">
+            <h2>Knowledge / Evaluation</h2>
+            <textarea id="askQuestion" rows="3">什么是RAG</textarea>
+            <button onclick="ask()">Ask RAG</button>
+            <button onclick="retrievalEval()">Eval Retrieval</button>
+            <button onclick="weakness()">Weakness Report</button>
+            <button onclick="logs()">Logs</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Output</h2>
+        <pre id="output"></pre>
+    </div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let token = "";
+let sessionId = "";
+
+function show(data) {
+    document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+}
+
+async function req(path, method="GET", body=null) {
+    const headers = {"Content-Type":"application/json"};
+    if (token) headers["Authorization"] = "Bearer " + token;
+
+    const res = await fetch(API + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : null
+    });
+    const data = await res.json();
+    show(data);
+    return data;
+}
+
+async function register() {
+    await req("/auth/register", "POST", {
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value
+    });
+}
+
+async function login() {
+    const data = await req("/auth/login", "POST", {
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value
+    });
+    token = data.access_token || "";
+    document.getElementById("token").textContent = token.slice(0, 24) + "...";
+}
+
+async function startInterview() {
+    const data = await req("/interview/start", "POST", {
+        target_role: document.getElementById("role").value
+    });
+    sessionId = data.session_id;
+    document.getElementById("sessionId").textContent = sessionId;
+    document.getElementById("currentQuestion").value = data.first_question || "";
+}
+
+async function sessionStep() {
+    const data = await req("/interview/session_step", "POST", {
+        session_id: Number(sessionId),
+        answer: document.getElementById("answer").value
+    });
+    if (data.next_question) {
+        document.getElementById("currentQuestion").value = data.next_question;
+        document.getElementById("answer").value = "";
+    }
+}
+
+async function getSession() {
+    await req(`/interview/session/${sessionId}`);
+}
+
+async function finishSession() {
+    await req(`/interview/session/${sessionId}/finish`, "POST", {});
+}
+
+async function ask() {
+    await req("/ask", "POST", {question: document.getElementById("askQuestion").value});
+}
+
+async function retrievalEval() {
+    await req("/eval/retrieval");
+}
+
+async function weakness() {
+    await req("/report/weakness");
+}
+
+async function logs() {
+    await req("/admin/logs");
+}
+</script>
+</body>
+</html>
