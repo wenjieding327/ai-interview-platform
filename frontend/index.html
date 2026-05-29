@@ -1,149 +1,78 @@
-<!DOCTYPE html>
-<html lang="zh">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <title>AI Interview Platform V4</title>
-    <style>
-        body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; }
-        .wrap { max-width:1100px; margin:30px auto; }
-        .grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-        .card { background:#fff; border-radius:14px; padding:18px; box-shadow:0 2px 12px rgba(0,0,0,.08); }
-        input, textarea { width:100%; padding:10px; margin:8px 0 12px; box-sizing:border-box; border:1px solid #ddd; border-radius:8px; }
-        button { padding:10px 16px; border:0; background:#111; color:#fff; border-radius:8px; cursor:pointer; margin-right:8px; }
-        pre { background:#111; color:#0f0; padding:16px; border-radius:10px; max-height:460px; overflow:auto; white-space:pre-wrap; }
-        h1 { margin-bottom:8px; }
-        .muted { color:#666; }
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AI Interview Coach</title>
+<style>
+:root{--bg:#070a12;--card:rgba(15,23,42,.78);--line:rgba(148,163,184,.18);--text:#e5e7eb;--muted:#94a3b8;--p:#8b5cf6;--c:#06b6d4;--g:#22c55e}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui;background:radial-gradient(circle at 15% 10%,rgba(139,92,246,.28),transparent 30%),radial-gradient(circle at 85% 20%,rgba(6,182,212,.22),transparent 30%),var(--bg);color:var(--text)}
+body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;opacity:.35}
+.app{position:relative;width:min(1420px,calc(100vw - 36px));margin:24px auto;display:grid;grid-template-columns:310px 1fr 360px;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.45);backdrop-filter:blur(18px)}
+.side,.right{padding:18px;height:calc(100vh - 48px);position:sticky;top:24px;overflow:auto}.main{height:calc(100vh - 48px);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
+.brand{display:flex;gap:12px;align-items:center}.logo{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--p),var(--c));font-weight:900}.brand h1{font-size:18px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
+label{display:block;color:var(--muted);font-size:12px;margin:14px 0 8px}input,select,textarea{width:100%;border:1px solid var(--line);background:rgba(2,6,23,.56);color:var(--text);border-radius:14px;padding:12px;outline:none}textarea{resize:vertical}
+button{border:0;border-radius:14px;padding:12px 14px;background:linear-gradient(135deg,var(--p),#4f46e5);color:white;font-weight:800;cursor:pointer}button.secondary{background:rgba(148,163,184,.13);border:1px solid var(--line)}button.green{background:linear-gradient(135deg,#10b981,#059669)}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.top{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.top h2{margin:0}.pill{border:1px solid var(--line);padding:8px 10px;border-radius:999px;color:var(--muted);font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);margin-right:7px}
+.chat{padding:22px;overflow:auto}.msg{display:flex;gap:12px;margin-bottom:18px}.msg.user{flex-direction:row-reverse}.av{width:38px;height:38px;border-radius:14px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(148,163,184,.13);font-weight:900}.msg.ai .av{background:linear-gradient(135deg,var(--p),var(--c))}
+.bubble{max-width:800px;white-space:pre-wrap;line-height:1.65;padding:14px 16px;border-radius:18px;background:rgba(15,23,42,.82);border:1px solid var(--line)}.msg.user .bubble{background:rgba(139,92,246,.16);border-color:rgba(139,92,246,.32)}
+.composer{padding:18px 22px;border-top:1px solid var(--line);background:rgba(15,23,42,.82)}.composer-grid{display:grid;grid-template-columns:1fr 150px;gap:12px;align-items:end}.composer textarea{min-height:72px;margin:0}
+.metric{padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(2,6,23,.5);margin-bottom:12px}.metric b{display:block;font-size:24px}.metric span{color:var(--muted);font-size:12px}.raw{background:#020617;color:#a7f3d0;border:1px solid var(--line);border-radius:16px;padding:12px;white-space:pre-wrap;max-height:330px;overflow:auto;font-size:12px}
+.filebox{border:1px dashed rgba(148,163,184,.35);border-radius:16px;padding:14px;text-align:center;color:var(--muted);margin-top:12px}.status{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6;word-break:break-all}
+@media(max-width:1100px){.app{grid-template-columns:1fr}.side,.right,.main{height:auto;position:static}.chat{max-height:70vh}}
+</style>
 </head>
 <body>
-<div class="wrap">
-    <h1>AI Interview Training Platform V4</h1>
-    <p class="muted">Local-max MVP: Auth + RAG + Rerank + Stateful Agent + Evaluation + Logs + Cache</p>
-
-    <div class="grid">
-        <div class="card">
-            <h2>Auth</h2>
-            <input id="email" value="test@test.com">
-            <input id="password" value="123456" type="password">
-            <button onclick="register()">Register</button>
-            <button onclick="login()">Login</button>
-            <p class="muted">Token: <span id="token"></span></p>
-        </div>
-
-        <div class="card">
-            <h2>Start Interview</h2>
-            <input id="role" value="LLM应用开发实习生">
-            <button onclick="startInterview()">Start</button>
-            <p>Session ID: <span id="sessionId"></span></p>
-        </div>
-
-        <div class="card">
-            <h2>Session Step</h2>
-            <textarea id="currentQuestion" rows="4" placeholder="Current question"></textarea>
-            <textarea id="answer" rows="5" placeholder="Your answer"></textarea>
-            <button onclick="sessionStep()">Submit Answer</button>
-            <button onclick="getSession()">View Session</button>
-            <button onclick="finishSession()">Finish</button>
-        </div>
-
-        <div class="card">
-            <h2>Knowledge / Evaluation</h2>
-            <textarea id="askQuestion" rows="3">什么是RAG</textarea>
-            <button onclick="ask()">Ask RAG</button>
-            <button onclick="retrievalEval()">Eval Retrieval</button>
-            <button onclick="weakness()">Weakness Report</button>
-            <button onclick="logs()">Logs</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>Output</h2>
-        <pre id="output"></pre>
-    </div>
+<div class="app">
+<aside class="side card">
+  <div class="brand"><div class="logo">AI</div><div><h1>Interview Coach</h1><p>RAG + Stateful Agent</p></div></div>
+  <label>Backend API URL</label><input id="api" value="https://selfless-rejoicing-production-4735.up.railway.app"/>
+  <label>Email</label><input id="email" value="test@test.com"/>
+  <label>Password</label><input id="pwd" value="123456" type="password"/>
+  <div class="row"><button class="secondary" onclick="register()">Register</button><button onclick="login()">Login</button></div>
+  <label>Target Role</label><select id="role"><option>AI应用开发实习生</option><option>LLM应用工程师</option><option>RAG工程师</option><option>Agent工程师</option><option>Python后端开发实习生</option></select>
+  <button class="green" style="width:100%;margin-top:12px" onclick="startInterview()">Start Interview</button>
+  <div class="filebox"><div>Upload Knowledge .txt</div><input id="file" type="file" accept=".txt"/><button class="secondary" style="width:100%;margin-top:10px" onclick="uploadKnowledge()">Upload</button></div>
+  <div class="status" id="status">Status: waiting<br>Token: none<br>Session: none</div>
+</aside>
+<section class="main card">
+  <div class="top"><div><h2>Mock Interview Session</h2><div style="height:8px"></div><span class="pill"><span class="dot"></span><span id="topStatus">Ready</span></span></div><button class="secondary" onclick="getSession()">View Memory</button></div>
+  <div class="chat" id="chat"><div class="msg ai"><div class="av">AI</div><div class="bubble">你好，我是你的 AI 面试官。登录后选择岗位并开始面试，我会根据你的回答评分、追问并记录弱项。</div></div></div>
+  <div class="composer"><div class="composer-grid"><textarea id="answer" placeholder="输入你的回答，例如：RAG 是检索增强生成..."></textarea><button onclick="submitAnswer()">Send</button></div></div>
+</section>
+<aside class="right card">
+  <h3>Project Console</h3>
+  <div class="metric"><b id="sid">0</b><span>Session ID</span></div>
+  <div class="metric"><b id="turn">0</b><span>Turns</span></div>
+  <div class="metric"><b id="score">--</b><span>Latest Score</span></div>
+  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="askRag()">Ask RAG</button>
+  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="evalRetrieval()">Retrieval Eval</button>
+  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="weakness()">Weakness Report</button>
+  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="logs()">Logs</button>
+  <h3>Raw Response</h3><div class="raw" id="raw">No response yet.</div>
+</aside>
 </div>
-
 <script>
-const API = "http://127.0.0.1:8000";
-let token = "";
-let sessionId = "";
-
-function show(data) {
-    document.getElementById("output").textContent = JSON.stringify(data, null, 2);
-}
-
-async function req(path, method="GET", body=null) {
-    const headers = {"Content-Type":"application/json"};
-    if (token) headers["Authorization"] = "Bearer " + token;
-
-    const res = await fetch(API + path, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : null
-    });
-    const data = await res.json();
-    show(data);
-    return data;
-}
-
-async function register() {
-    await req("/auth/register", "POST", {
-        email: document.getElementById("email").value,
-        password: document.getElementById("password").value
-    });
-}
-
-async function login() {
-    const data = await req("/auth/login", "POST", {
-        email: document.getElementById("email").value,
-        password: document.getElementById("password").value
-    });
-    token = data.access_token || "";
-    document.getElementById("token").textContent = token.slice(0, 24) + "...";
-}
-
-async function startInterview() {
-    const data = await req("/interview/start", "POST", {
-        target_role: document.getElementById("role").value
-    });
-    sessionId = data.session_id;
-    document.getElementById("sessionId").textContent = sessionId;
-    document.getElementById("currentQuestion").value = data.first_question || "";
-}
-
-async function sessionStep() {
-    const data = await req("/interview/session_step", "POST", {
-        session_id: Number(sessionId),
-        answer: document.getElementById("answer").value
-    });
-    if (data.next_question) {
-        document.getElementById("currentQuestion").value = data.next_question;
-        document.getElementById("answer").value = "";
-    }
-}
-
-async function getSession() {
-    await req(`/interview/session/${sessionId}`);
-}
-
-async function finishSession() {
-    await req(`/interview/session/${sessionId}/finish`, "POST", {});
-}
-
-async function ask() {
-    await req("/ask", "POST", {question: document.getElementById("askQuestion").value});
-}
-
-async function retrievalEval() {
-    await req("/eval/retrieval");
-}
-
-async function weakness() {
-    await req("/report/weakness");
-}
-
-async function logs() {
-    await req("/admin/logs");
-}
+let token="", sessionId=null, turns=0;
+const $=id=>document.getElementById(id);
+function api(){return $("api").value.replace(/\/$/,"")}
+function raw(d){$("raw").textContent=JSON.stringify(d,null,2)}
+function status(t){$("status").innerHTML=`Status: ${t}<br>Token: ${token?token.slice(0,24)+"...":"none"}<br>Session: ${sessionId||"none"}`}
+function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}
+function msg(role,text){let d=document.createElement("div");d.className="msg "+(role==="ai"?"ai":"user");d.innerHTML=`<div class="av">${role==="ai"?"AI":"You"}</div><div class="bubble">${esc(text)}</div>`;$("chat").appendChild(d);$("chat").scrollTop=$("chat").scrollHeight}
+async function req(path,method="GET",body=null,isFile=false){let h={};if(!isFile)h["Content-Type"]="application/json";if(token)h["Authorization"]="Bearer "+token;let r=await fetch(api()+path,{method,headers:h,body:body?(isFile?body:JSON.stringify(body)):null});let d=await r.json().catch(()=>({error:"Non-JSON"}));raw(d);if(!r.ok)throw new Error(d.detail||JSON.stringify(d));return d}
+async function register(){try{await req("/auth/register","POST",{email:$("email").value,password:$("pwd").value});status("registered");msg("ai","注册成功，现在登录。")}catch(e){msg("ai","注册失败："+e.message)}}
+async function login(){try{let d=await req("/auth/login","POST",{email:$("email").value,password:$("pwd").value});token=d.access_token;status("logged in");msg("ai","登录成功，可以开始面试。")}catch(e){msg("ai","登录失败："+e.message)}}
+async function startInterview(){try{let d=await req("/interview/start","POST",{target_role:$("role").value});sessionId=d.session_id;turns=0;$("sid").textContent=sessionId;$("turn").textContent=turns;status("interview started");msg("ai",d.first_question)}catch(e){msg("ai","开始失败："+e.message)}}
+async function submitAnswer(){let ans=$("answer").value.trim();if(!ans)return msg("ai","先写回答。");if(!sessionId)return msg("ai","先开始面试。");msg("user",ans);$("answer").value="";try{let d=await req("/interview/session_step","POST",{session_id:Number(sessionId),answer:ans});turns=d.turn_count||turns+1;$("turn").textContent=turns;try{$("score").textContent=JSON.parse(d.evaluation).score??"--"}catch(_){}msg("ai",`评分：\n${d.evaluation}\n\n下一问：\n${d.next_question}`)}catch(e){msg("ai","提交失败："+e.message)}}
+async function getSession(){if(!sessionId)return msg("ai","没有 session。");try{let d=await req(`/interview/session/${sessionId}`);msg("ai","Session记忆：\n"+JSON.stringify(d.turns,null,2))}catch(e){msg("ai","读取失败："+e.message)}}
+async function askRag(){try{let d=await req("/ask","POST",{question:"什么是RAG？"});msg("ai","RAG回答：\n"+d.answer)}catch(e){msg("ai","RAG失败："+e.message)}}
+async function evalRetrieval(){try{let d=await req("/eval/retrieval");msg("ai","检索评测完成，Hit Rate = "+d.hit_rate)}catch(e){msg("ai","评测失败："+e.message)}}
+async function weakness(){try{let d=await req("/report/weakness");msg("ai","弱项报告：\n"+(d.report||d.message))}catch(e){msg("ai","报告失败："+e.message)}}
+async function logs(){try{let d=await req("/admin/logs");msg("ai","最近日志：\n"+JSON.stringify((d.logs||[]).slice(-5),null,2))}catch(e){msg("ai","日志失败："+e.message)}}
+async function uploadKnowledge(){let f=$("file").files[0];if(!f)return msg("ai","请选择txt文件。");let form=new FormData();form.append("file",f);try{let d=await req("/knowledge/upload","POST",form,true);msg("ai",`上传成功：新增 ${d.added_count} 条知识。`)}catch(e){msg("ai","上传失败："+e.message)}}
+status("waiting");
 </script>
 </body>
 </html>
