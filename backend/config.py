@@ -13,5 +13,9 @@ CHROMA_PATH = os.getenv("CHROMA_PATH", "./storage/chroma_db")
 DATA_PATH = os.getenv("DATA_PATH", "./data/interview_qa.txt")
 LOG_PATH = os.getenv("LOG_PATH", "./storage/app_events.jsonl")
 
-USE_FAKE_LLM = os.getenv("USE_FAKE_LLM", "false").lower() == "true"
-USE_FAKE_EMBEDDINGS = os.getenv("USE_FAKE_EMBEDDINGS", "false").lower() == "true"
+IS_RAILWAY = bool(os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_PROJECT_ID"))
+DEFAULT_FAKE_LLM = "true" if not DEEPSEEK_API_KEY else "false"
+DEFAULT_FAKE_EMBEDDINGS = "true" if IS_RAILWAY else "false"
+
+USE_FAKE_LLM = os.getenv("USE_FAKE_LLM", DEFAULT_FAKE_LLM).lower() == "true"
+USE_FAKE_EMBEDDINGS = os.getenv("USE_FAKE_EMBEDDINGS", DEFAULT_FAKE_EMBEDDINGS).lower() == "true"

@@ -40,7 +40,6 @@ from services_interview import (
 )
 
 Base.metadata.create_all(bind=engine)
-init_knowledge_base()
 
 app = FastAPI(
     title="AI Interview Training Platform V2",

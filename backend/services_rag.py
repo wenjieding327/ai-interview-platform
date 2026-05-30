@@ -5,6 +5,7 @@ from typing import Dict, Any, List
 import chromadb
 
 from config import CHROMA_PATH, DATA_PATH, USE_FAKE_EMBEDDINGS
+from services_logging import log_event
 
 
 class FakeEmbeddingModel:
@@ -13,14 +14,8 @@ class FakeEmbeddingModel:
         return [byte / 255 for byte in digest]
 
 
-if USE_FAKE_EMBEDDINGS:
-    embedding_model = FakeEmbeddingModel()
-else:
-    from sentence_transformers import SentenceTransformer
-
-    embedding_model = SentenceTransformer(
-        "sentence-transformers/all-MiniLM-L6-v2"
-    )
+embedding_model = None
+knowledge_initialized = False
 
 chroma_client = chromadb.PersistentClient(
     path=CHROMA_PATH
@@ -29,6 +24,36 @@ chroma_client = chromadb.PersistentClient(
 collection = chroma_client.get_or_create_collection(
     name="interview_knowledge"
 )
+
+
+def get_embedding_model():
+    global embedding_model
+
+    if embedding_model is not None:
+        return embedding_model
+
+    if USE_FAKE_EMBEDDINGS:
+        log_event("embedding_fake_model_enabled", {})
+        embedding_model = FakeEmbeddingModel()
+        return embedding_model
+
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        embedding_model = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L6-v2"
+        )
+        return embedding_model
+
+    except Exception as exc:
+        log_event("embedding_model_fallback", {"error": str(exc)})
+        embedding_model = FakeEmbeddingModel()
+        return embedding_model
+
+
+def encode_text(text: str) -> List[float]:
+    embedding = get_embedding_model().encode(text)
+    return embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
 
 
 def load_seed_documents() -> List[str]:
@@ -50,7 +75,13 @@ def load_seed_documents() -> List[str]:
 
 
 def init_knowledge_base() -> None:
+    global knowledge_initialized
+
+    if knowledge_initialized:
+        return
+
     if collection.count() > 0:
+        knowledge_initialized = True
         return
 
     documents = load_seed_documents()
@@ -58,11 +89,12 @@ def init_knowledge_base() -> None:
     for doc in documents:
         add_knowledge_text(doc)
 
+    knowledge_initialized = True
+
 
 def add_knowledge_text(text: str) -> str:
     doc_id = str(collection.count() + 1)
-    embedding = embedding_model.encode(text)
-    vector = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
+    vector = encode_text(text)
 
     collection.add(
         ids=[doc_id],
@@ -118,8 +150,8 @@ def retrieve_context(query: str, top_k: int = 5, candidate_k: int = 15) -> Dict[
     ↓
     Top top_k 拼接context
     """
-    query_embedding = embedding_model.encode(query)
-    query_vector = query_embedding.tolist() if hasattr(query_embedding, "tolist") else list(query_embedding)
+    init_knowledge_base()
+    query_vector = encode_text(query)
 
     total_count = collection.count()
     if total_count == 0:
