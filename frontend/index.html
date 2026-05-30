@@ -5,74 +5,675 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>AI Interview Coach</title>
 <style>
-:root{--bg:#070a12;--card:rgba(15,23,42,.78);--line:rgba(148,163,184,.18);--text:#e5e7eb;--muted:#94a3b8;--p:#8b5cf6;--c:#06b6d4;--g:#22c55e}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui;background:radial-gradient(circle at 15% 10%,rgba(139,92,246,.28),transparent 30%),radial-gradient(circle at 85% 20%,rgba(6,182,212,.22),transparent 30%),var(--bg);color:var(--text)}
-body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;opacity:.35}
-.app{position:relative;width:min(1420px,calc(100vw - 36px));margin:24px auto;display:grid;grid-template-columns:310px 1fr 360px;gap:18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.45);backdrop-filter:blur(18px)}
-.side,.right{padding:18px;height:calc(100vh - 48px);position:sticky;top:24px;overflow:auto}.main{height:calc(100vh - 48px);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
-.brand{display:flex;gap:12px;align-items:center}.logo{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--p),var(--c));font-weight:900}.brand h1{font-size:18px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
-label{display:block;color:var(--muted);font-size:12px;margin:14px 0 8px}input,select,textarea{width:100%;border:1px solid var(--line);background:rgba(2,6,23,.56);color:var(--text);border-radius:14px;padding:12px;outline:none}textarea{resize:vertical}
-button{border:0;border-radius:14px;padding:12px 14px;background:linear-gradient(135deg,var(--p),#4f46e5);color:white;font-weight:800;cursor:pointer}button.secondary{background:rgba(148,163,184,.13);border:1px solid var(--line)}button.green{background:linear-gradient(135deg,#10b981,#059669)}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.top{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.top h2{margin:0}.pill{border:1px solid var(--line);padding:8px 10px;border-radius:999px;color:var(--muted);font-size:12px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);margin-right:7px}
-.chat{padding:22px;overflow:auto}.msg{display:flex;gap:12px;margin-bottom:18px}.msg.user{flex-direction:row-reverse}.av{width:38px;height:38px;border-radius:14px;display:grid;place-items:center;border:1px solid var(--line);background:rgba(148,163,184,.13);font-weight:900}.msg.ai .av{background:linear-gradient(135deg,var(--p),var(--c))}
-.bubble{max-width:800px;white-space:pre-wrap;line-height:1.65;padding:14px 16px;border-radius:18px;background:rgba(15,23,42,.82);border:1px solid var(--line)}.msg.user .bubble{background:rgba(139,92,246,.16);border-color:rgba(139,92,246,.32)}
-.composer{padding:18px 22px;border-top:1px solid var(--line);background:rgba(15,23,42,.82)}.composer-grid{display:grid;grid-template-columns:1fr 150px;gap:12px;align-items:end}.composer textarea{min-height:72px;margin:0}
-.metric{padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(2,6,23,.5);margin-bottom:12px}.metric b{display:block;font-size:24px}.metric span{color:var(--muted);font-size:12px}.raw{background:#020617;color:#a7f3d0;border:1px solid var(--line);border-radius:16px;padding:12px;white-space:pre-wrap;max-height:330px;overflow:auto;font-size:12px}
-.filebox{border:1px dashed rgba(148,163,184,.35);border-radius:16px;padding:14px;text-align:center;color:var(--muted);margin-top:12px}.status{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6;word-break:break-all}
-@media(max-width:1100px){.app{grid-template-columns:1fr}.side,.right,.main{height:auto;position:static}.chat{max-height:70vh}}
+:root{
+  --bg:#080b12;
+  --panel:#10151f;
+  --panel-2:#151b27;
+  --soft:#1b2332;
+  --line:#2b3547;
+  --text:#eef2f7;
+  --muted:#9ca8ba;
+  --muted-2:#728095;
+  --accent:#3dd6c6;
+  --accent-2:#7c91ff;
+  --warn:#f7c56b;
+  --danger:#ff7b7b;
+  --ok:#6ee7a8;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    linear-gradient(135deg,rgba(61,214,198,.11),transparent 28%),
+    linear-gradient(315deg,rgba(124,145,255,.12),transparent 30%),
+    var(--bg);
+  color:var(--text);
+}
+button,input,select,textarea{font:inherit}
+button{
+  border:1px solid transparent;
+  border-radius:10px;
+  padding:11px 14px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  color:#071018;
+  font-weight:800;
+  cursor:pointer;
+  transition:transform .15s ease,border-color .15s ease,background .15s ease;
+}
+button:hover{transform:translateY(-1px)}
+button.secondary{background:#192232;color:var(--text);border-color:var(--line)}
+button.ghost{background:transparent;color:var(--muted);border-color:var(--line)}
+button.full{width:100%}
+label{display:block;color:var(--muted);font-size:12px;margin:16px 0 8px}
+input,select,textarea{
+  width:100%;
+  border:1px solid var(--line);
+  background:#0b1018;
+  color:var(--text);
+  border-radius:10px;
+  padding:12px;
+  outline:none;
+}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:rgba(61,214,198,.72);box-shadow:0 0 0 3px rgba(61,214,198,.12)}
+.app{
+  width:min(1480px,calc(100vw - 32px));
+  margin:16px auto;
+  display:grid;
+  grid-template-columns:300px minmax(0,1fr) 360px;
+  gap:16px;
+}
+.panel{
+  background:rgba(16,21,31,.92);
+  border:1px solid var(--line);
+  border-radius:8px;
+  box-shadow:0 24px 70px rgba(0,0,0,.35);
+}
+.side,.console{height:calc(100vh - 32px);position:sticky;top:16px;overflow:auto;padding:18px}
+.main{height:calc(100vh - 32px);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
+.brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+.logo{
+  width:42px;height:42px;border-radius:10px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  color:#061019;font-weight:900;
+}
+.brand h1{font-size:17px;margin:0}
+.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.filebox{border:1px dashed var(--line);border-radius:8px;padding:14px;margin-top:16px;background:#0b1018}
+.filebox p{margin:0 0 10px;color:var(--muted);font-size:13px}
+.hint{margin-top:8px;color:var(--muted-2);font-size:12px;line-height:1.5}
+.run-note{display:none;margin:0 0 14px;padding:10px 12px;border:1px solid rgba(247,197,107,.36);border-radius:8px;background:rgba(247,197,107,.08);color:#ffe3a3;font-size:12px;line-height:1.5}
+.run-note a{color:#fff0b8}
+.status{
+  margin-top:16px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#0b1018;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.65;
+  word-break:break-all;
+}
+.top{
+  padding:18px 20px;
+  border-bottom:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  background:#111724;
+}
+.top h2{margin:0 0 6px;font-size:18px}
+.top p{margin:0;color:var(--muted);font-size:13px}
+.pill{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1px solid var(--line);
+  padding:7px 10px;
+  border-radius:999px;
+  color:var(--muted);
+  font-size:12px;
+  background:#0b1018;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.chat{padding:22px;overflow:auto;background:linear-gradient(180deg,#0d121b,#0a0e15)}
+.msg{display:flex;gap:12px;margin-bottom:18px;align-items:flex-start}
+.msg.user{flex-direction:row-reverse}
+.av{
+  flex:0 0 36px;width:36px;height:36px;border-radius:10px;
+  display:grid;place-items:center;
+  border:1px solid var(--line);
+  background:#182131;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:900;
+}
+.msg.ai .av{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#071018;border-color:transparent}
+.bubble{
+  max-width:min(820px,100%);
+  line-height:1.65;
+  padding:14px 16px;
+  border-radius:8px;
+  background:#121925;
+  border:1px solid var(--line);
+  color:var(--text);
+  white-space:pre-wrap;
+}
+.msg.user .bubble{background:#152236;border-color:#34445e}
+.error-bubble{border-color:rgba(255,123,123,.5);color:#ffd4d4;background:#25161a}
+.evaluation-card,.next-card{
+  width:min(820px,100%);
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#121925;
+  overflow:hidden;
+}
+.card-head{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:14px 16px;border-bottom:1px solid var(--line);background:#151d2b;
+}
+.card-head h3{margin:0;font-size:15px}
+.score-pill{
+  min-width:72px;text-align:center;
+  border-radius:999px;
+  padding:7px 10px;
+  background:rgba(61,214,198,.13);
+  border:1px solid rgba(61,214,198,.36);
+  color:#b9fff7;
+  font-weight:900;
+}
+.score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px}
+.score-item{padding:12px;border:1px solid var(--line);border-radius:8px;background:#0b1018}
+.score-item span{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+.score-item b{font-size:20px}
+.review-list{display:grid;gap:10px;padding:12px}
+.review-empty{color:var(--muted);font-size:12px;line-height:1.55}
+.review-item{border:1px solid var(--line);border-radius:8px;background:#0b1018;overflow:hidden}
+.review-item summary{display:flex;justify-content:space-between;gap:10px;align-items:center;background:#101723}
+.review-item b{color:var(--text)}
+.review-body{padding:12px;display:grid;gap:10px}
+.review-qa{color:var(--muted);font-size:12px;line-height:1.55;white-space:pre-wrap}
+.review-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.review-mini{padding:9px;border:1px solid var(--line);border-radius:8px;background:#121925}
+.review-mini span{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}
+.review-mini strong{font-size:13px}
+.feedback-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 14px}
+.feedback-box{padding:12px;border:1px solid var(--line);border-radius:8px;background:#0b1018}
+.feedback-box h4{margin:0 0 8px;font-size:13px;color:#dbeafe}
+.feedback-box p{margin:0;color:var(--muted);line-height:1.6;white-space:pre-wrap}
+.suggestion{grid-column:1/-1}
+.final-card{
+  width:min(820px,100%);
+  border:1px solid rgba(61,214,198,.42);
+  border-radius:8px;
+  background:#121925;
+  overflow:hidden;
+}
+.final-body{padding:15px 16px;line-height:1.7;white-space:pre-wrap;color:var(--text)}
+.next-card{border-color:rgba(61,214,198,.36)}
+.next-card .card-head{background:rgba(61,214,198,.1)}
+.next-body{padding:15px 16px;line-height:1.7;white-space:pre-wrap}
+.composer{padding:18px 20px;border-top:1px solid var(--line);background:#111724}
+.composer-grid{display:grid;grid-template-columns:minmax(0,1fr)132px;gap:12px;align-items:end}
+.composer textarea{min-height:76px}
+.console h3{margin:0 0 12px;font-size:15px}
+.console-section{border:1px solid var(--line);border-radius:8px;background:#0b1018;margin-bottom:14px;overflow:hidden}
+.section-title{padding:12px 14px;border-bottom:1px solid var(--line);color:#dbe4f3;font-weight:800;font-size:13px;background:#141b28}
+.metrics{display:grid;gap:10px;padding:12px}
+.metric{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(43,53,71,.65)}
+.metric:last-child{border-bottom:0}
+.metric span{color:var(--muted);font-size:12px}
+.metric b{font-size:16px;text-align:right;word-break:break-all}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+details{padding:0}
+summary{list-style:none;cursor:pointer;padding:12px 14px;color:#dbe4f3;font-weight:800;font-size:13px;background:#141b28}
+summary::-webkit-details-marker{display:none}
+.raw{
+  margin:12px;
+  background:#05080e;
+  color:#9ff7d9;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:12px;
+  white-space:pre-wrap;
+  max-height:360px;
+  overflow:auto;
+  font-size:12px;
+}
+.muted{color:var(--muted)}
+@media(max-width:1180px){
+  .app{grid-template-columns:1fr}
+  .side,.console,.main{height:auto;position:static}
+  .chat{max-height:70vh}
+}
+@media(max-width:640px){
+  .app{width:calc(100vw - 20px);margin:10px auto}
+  .top,.composer-grid,.feedback-grid,.score-grid{grid-template-columns:1fr}
+  .top{align-items:flex-start;flex-direction:column}
+  .tool-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 <div class="app">
-<aside class="side card">
-  <div class="brand"><div class="logo">AI</div><div><h1>Interview Coach</h1><p>RAG + Stateful Agent</p></div></div>
-  <label>Backend API URL</label><input id="api" value="https://selfless-rejoicing-production-4735.up.railway.app"/>
-  <label>Email</label><input id="email" value="test@test.com"/>
-  <label>Password</label><input id="pwd" value="123456" type="password"/>
-  <div class="row"><button class="secondary" onclick="register()">Register</button><button onclick="login()">Login</button></div>
-  <label>Target Role</label><select id="role"><option>AI应用开发实习生</option><option>LLM应用工程师</option><option>RAG工程师</option><option>Agent工程师</option><option>Python后端开发实习生</option></select>
-  <button class="green" style="width:100%;margin-top:12px" onclick="startInterview()">Start Interview</button>
-  <div class="filebox"><div>Upload Knowledge .txt</div><input id="file" type="file" accept=".txt"/><button class="secondary" style="width:100%;margin-top:10px" onclick="uploadKnowledge()">Upload</button></div>
-  <div class="status" id="status">Status: waiting<br>Token: none<br>Session: none</div>
-</aside>
-<section class="main card">
-  <div class="top"><div><h2>Mock Interview Session</h2><div style="height:8px"></div><span class="pill"><span class="dot"></span><span id="topStatus">Ready</span></span></div><button class="secondary" onclick="getSession()">View Memory</button></div>
-  <div class="chat" id="chat"><div class="msg ai"><div class="av">AI</div><div class="bubble">你好，我是你的 AI 面试官。登录后选择岗位并开始面试，我会根据你的回答评分、追问并记录弱项。</div></div></div>
-  <div class="composer"><div class="composer-grid"><textarea id="answer" placeholder="输入你的回答，例如：RAG 是检索增强生成..."></textarea><button onclick="submitAnswer()">Send</button></div></div>
-</section>
-<aside class="right card">
-  <h3>Project Console</h3>
-  <div class="metric"><b id="sid">0</b><span>Session ID</span></div>
-  <div class="metric"><b id="turn">0</b><span>Turns</span></div>
-  <div class="metric"><b id="score">--</b><span>Latest Score</span></div>
-  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="askRag()">Ask RAG</button>
-  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="evalRetrieval()">Retrieval Eval</button>
-  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="weakness()">Weakness Report</button>
-  <button class="secondary" style="width:100%;margin-bottom:10px" onclick="logs()">Logs</button>
-  <h3>Raw Response</h3><div class="raw" id="raw">No response yet.</div>
-</aside>
+  <aside class="side panel">
+    <div class="brand">
+      <div class="logo">AI</div>
+      <div>
+        <h1>AI Interview Coach</h1>
+        <p>RAG + Agent 面试训练台</p>
+      </div>
+    </div>
+    <div class="run-note" id="runNote">
+      当前是本地文件打开模式。若注册或登录失败，请使用 Vercel 线上地址，或在本地用 http://localhost 方式打开。
+      <br><a href="https://ai-interview-platform-taupe-chi.vercel.app" target="_blank" rel="noreferrer">打开 Vercel 页面</a>
+    </div>
+
+    <label for="api">Backend API URL</label>
+    <input id="api" value="https://selfless-rejoicing-production-4735.up.railway.app"/>
+
+    <label for="email">Email</label>
+    <input id="email" value=""/>
+    <div class="hint">默认会生成一次性测试邮箱，避免重复注册误判为系统失败。</div>
+
+    <label for="pwd">Password</label>
+    <input id="pwd" value="123456" type="password"/>
+    <button class="secondary full" style="margin-top:10px" onclick="newDemoEmail()">换一个测试邮箱</button>
+
+    <div class="row">
+      <button class="secondary" onclick="register()">注册</button>
+      <button onclick="login()">登录</button>
+    </div>
+
+    <label for="role">目标岗位</label>
+    <select id="role">
+      <option>AI应用开发实习生</option>
+      <option>LLM应用工程师</option>
+      <option>RAG工程师</option>
+      <option>Agent工程师</option>
+      <option>Python后端开发实习生</option>
+    </select>
+
+    <button class="full" style="margin-top:12px" onclick="startInterview()">开始面试</button>
+
+    <div class="filebox">
+      <p>上传知识库 .txt</p>
+      <input id="file" type="file" accept=".txt"/>
+      <button class="secondary full" style="margin-top:10px" onclick="uploadKnowledge()">上传</button>
+    </div>
+
+    <div class="status" id="status">Status: waiting<br>Token: none<br>Session: none</div>
+  </aside>
+
+  <section class="main panel">
+    <div class="top">
+      <div>
+        <h2>Mock Interview Session</h2>
+        <p>回答问题后，系统会给出结构化评分、追问和能力短板记录。</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="pill"><span class="dot"></span><span id="topStatus">Ready</span></span>
+        <button class="secondary" onclick="getSession()">查看记忆</button>
+        <button onclick="finishInterview()">结束并总结</button>
+      </div>
+    </div>
+
+    <div class="chat" id="chat">
+      <div class="msg ai">
+        <div class="av">AI</div>
+        <div class="bubble">你好，我是你的 AI 面试官。登录后选择目标岗位并开始面试，我会根据你的回答进行评分、追问，并记录需要补强的能力点。</div>
+      </div>
+    </div>
+
+    <div class="composer">
+      <div class="composer-grid">
+        <textarea id="answer" placeholder="输入你的回答，例如：RAG 是检索增强生成，它会先从知识库检索相关上下文..."></textarea>
+        <button onclick="submitAnswer()">发送</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="console panel">
+    <h3>Project Console</h3>
+
+    <section class="console-section">
+      <div class="section-title">Session</div>
+      <div class="metrics">
+        <div class="metric"><span>Session ID</span><b id="sid">--</b></div>
+        <div class="metric"><span>Turns</span><b id="turn">0</b></div>
+        <div class="metric"><span>Latest Score</span><b id="score">--</b></div>
+      </div>
+    </section>
+
+    <section class="console-section">
+      <div class="section-title">Tools</div>
+      <div class="tool-grid">
+        <button class="secondary" onclick="health()">Health Check</button>
+        <button class="secondary" onclick="askRag()">Ask RAG</button>
+        <button class="secondary" onclick="evalRetrieval()">Retrieval Eval</button>
+        <button class="secondary" onclick="weakness()">Weakness Report</button>
+        <button class="secondary" onclick="logs()">Logs</button>
+      </div>
+    </section>
+
+    <section class="console-section">
+      <div class="section-title">Question Reviews</div>
+      <div class="review-list" id="reviews">
+        <div class="review-empty">每轮回答后的评分和优缺点会收纳在这里，主聊天区只保留面试追问。</div>
+      </div>
+    </section>
+
+    <section class="console-section">
+      <details>
+        <summary>Debug · Raw Response</summary>
+        <div class="raw" id="raw">No response yet.</div>
+      </details>
+    </section>
+  </aside>
 </div>
+
 <script>
-let token="", sessionId=null, turns=0;
+let token="", sessionId=null, turns=0, turnReviews=[];
 const $=id=>document.getElementById(id);
+const evaluationFields=[
+  ["technical_accuracy","技术准确性"],
+  ["rag_understanding","RAG理解"],
+  ["agent_understanding","Agent理解"],
+  ["backend_understanding","后端理解"],
+  ["project_depth","项目深度"]
+];
+
 function api(){return $("api").value.replace(/\/$/,"")}
 function raw(d){$("raw").textContent=JSON.stringify(d,null,2)}
-function status(t){$("status").innerHTML=`Status: ${t}<br>Token: ${token?token.slice(0,24)+"...":"none"}<br>Session: ${sessionId||"none"}`}
-function esc(s){return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")}
-function msg(role,text){let d=document.createElement("div");d.className="msg "+(role==="ai"?"ai":"user");d.innerHTML=`<div class="av">${role==="ai"?"AI":"You"}</div><div class="bubble">${esc(text)}</div>`;$("chat").appendChild(d);$("chat").scrollTop=$("chat").scrollHeight}
-async function req(path,method="GET",body=null,isFile=false){let h={};if(!isFile)h["Content-Type"]="application/json";if(token)h["Authorization"]="Bearer "+token;let r=await fetch(api()+path,{method,headers:h,body:body?(isFile?body:JSON.stringify(body)):null});let d=await r.json().catch(()=>({error:"Non-JSON"}));raw(d);if(!r.ok)throw new Error(d.detail||JSON.stringify(d));return d}
-async function register(){try{await req("/auth/register","POST",{email:$("email").value,password:$("pwd").value});status("registered");msg("ai","注册成功，现在登录。")}catch(e){msg("ai","注册失败："+e.message)}}
-async function login(){try{let d=await req("/auth/login","POST",{email:$("email").value,password:$("pwd").value});token=d.access_token;status("logged in");msg("ai","登录成功，可以开始面试。")}catch(e){msg("ai","登录失败："+e.message)}}
-async function startInterview(){try{let d=await req("/interview/start","POST",{target_role:$("role").value});sessionId=d.session_id;turns=0;$("sid").textContent=sessionId;$("turn").textContent=turns;status("interview started");msg("ai",d.first_question)}catch(e){msg("ai","开始失败："+e.message)}}
-async function submitAnswer(){let ans=$("answer").value.trim();if(!ans)return msg("ai","先写回答。");if(!sessionId)return msg("ai","先开始面试。");msg("user",ans);$("answer").value="";try{let d=await req("/interview/session_step","POST",{session_id:Number(sessionId),answer:ans});turns=d.turn_count||turns+1;$("turn").textContent=turns;try{$("score").textContent=JSON.parse(d.evaluation).score??"--"}catch(_){}msg("ai",`评分：\n${d.evaluation}\n\n下一问：\n${d.next_question}`)}catch(e){msg("ai","提交失败："+e.message)}}
-async function getSession(){if(!sessionId)return msg("ai","没有 session。");try{let d=await req(`/interview/session/${sessionId}`);msg("ai","Session记忆：\n"+JSON.stringify(d.turns,null,2))}catch(e){msg("ai","读取失败："+e.message)}}
-async function askRag(){try{let d=await req("/ask","POST",{question:"什么是RAG？"});msg("ai","RAG回答：\n"+d.answer)}catch(e){msg("ai","RAG失败："+e.message)}}
-async function evalRetrieval(){try{let d=await req("/eval/retrieval");msg("ai","检索评测完成，Hit Rate = "+d.hit_rate)}catch(e){msg("ai","评测失败："+e.message)}}
-async function weakness(){try{let d=await req("/report/weakness");msg("ai","弱项报告：\n"+(d.report||d.message))}catch(e){msg("ai","报告失败："+e.message)}}
-async function logs(){try{let d=await req("/admin/logs");msg("ai","最近日志：\n"+JSON.stringify((d.logs||[]).slice(-5),null,2))}catch(e){msg("ai","日志失败："+e.message)}}
-async function uploadKnowledge(){let f=$("file").files[0];if(!f)return msg("ai","请选择txt文件。");let form=new FormData();form.append("file",f);try{let d=await req("/knowledge/upload","POST",form,true);msg("ai",`上传成功：新增 ${d.added_count} 条知识。`)}catch(e){msg("ai","上传失败："+e.message)}}
-status("waiting");
+function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+function makeDemoEmail(){
+  const stamp=new Date().toISOString().replace(/\D/g,"").slice(0,14);
+  return `demo+${stamp}@example.com`;
+}
+function newDemoEmail(){
+  $("email").value=makeDemoEmail();
+  status("已生成测试邮箱");
+}
+function status(t){
+  $("topStatus").textContent=t;
+  $("status").innerHTML=`Status: ${esc(t)}<br>Token: ${token?esc(token.slice(0,24))+"...":"none"}<br>Session: ${sessionId||"none"}`;
+}
+function scrollChat(){$("chat").scrollTop=$("chat").scrollHeight}
+function addMessage(role,content,{html=false,error=false}={}){
+  const d=document.createElement("div");
+  d.className="msg "+(role==="ai"?"ai":"user");
+  const bubble=html?content:`<div class="bubble ${error?"error-bubble":""}">${esc(content)}</div>`;
+  d.innerHTML=`<div class="av">${role==="ai"?"AI":"You"}</div>${bubble}`;
+  $("chat").appendChild(d);
+  scrollChat();
+}
+function normalizeError(err){
+  const text=String(err?.message||err||"");
+  if(text.includes("Failed to fetch"))return "无法连接后端，请检查 Railway 服务或 API URL";
+  if(text.includes("Not authenticated"))return "请先登录";
+  if(text.includes("401"))return "登录状态失效，请重新登录";
+  if(text.includes("Email already registered"))return "该邮箱已注册，请直接登录；如果想重新注册，请点击“换一个测试邮箱”。";
+  if(text.includes("Invalid email or password"))return "邮箱或密码不正确；如果还没注册，请先注册。";
+  if(text.includes("string_too_short"))return "输入内容太短，请检查邮箱、密码或回答内容。";
+  if(text.includes("string_too_long"))return "输入内容太长，请缩短后再提交。";
+  if(text.includes("value_error"))return "输入格式不正确，请检查邮箱、密码或回答内容。";
+  if(text.includes("403"))return "你没有权限执行这个操作";
+  if(text.includes("404"))return "后端没有找到对应资源，请检查 Session 或接口状态";
+  if(text.includes("[object Object]"))return "后端返回了异常信息，请查看右侧 Raw Response";
+  return text || "操作失败，请稍后再试";
+}
+async function req(path,method="GET",body=null,isFile=false){
+  const h={};
+  if(!isFile)h["Content-Type"]="application/json";
+  if(token)h["Authorization"]="Bearer "+token;
+  let r;
+  try{
+    r=await fetch(api()+path,{method,headers:h,body:body?(isFile?body:JSON.stringify(body)):null});
+  }catch(e){
+    throw new Error(normalizeError(e));
+  }
+  const d=await r.json().catch(()=>({error:"Non-JSON response"}));
+  raw(d);
+  if(!r.ok){
+    const detail=typeof d.detail==="string"?d.detail:JSON.stringify(d);
+    throw new Error(`${r.status} ${detail}`);
+  }
+  return d;
+}
+function parseEvaluation(evaluation){
+  if(!evaluation)return null;
+  if(typeof evaluation==="object")return evaluation;
+  if(typeof evaluation==="string"){
+    const trimmed=evaluation.trim();
+    try{return JSON.parse(trimmed)}catch(_){}
+    const jsonMatch=trimmed.match(/\{[\s\S]*\}/);
+    if(jsonMatch){
+      try{return JSON.parse(jsonMatch[0])}catch(_){}
+    }
+    return {summary:trimmed};
+  }
+  return {summary:String(evaluation)};
+}
+function valueText(v){
+  if(Array.isArray(v))return v.join("\n");
+  if(v&&typeof v==="object")return Object.entries(v).map(([k,val])=>`${k}: ${val}`).join("\n");
+  return v??"--";
+}
+function formatPercent(v){
+  return typeof v==="number"?`${Math.round(v*1000)/10}%`:"--";
+}
+function formatNumber(v){
+  return typeof v==="number"?String(Math.round(v*1000)/1000):"--";
+}
+function renderEvaluationCard(evaluation){
+  const ev=parseEvaluation(evaluation)||{};
+  const score=ev.score??"--";
+  $("score").textContent=score;
+  const metrics=evaluationFields.map(([key,label])=>`
+    <div class="score-item">
+      <span>${label}</span>
+      <b>${esc(valueText(ev[key]))}</b>
+    </div>
+  `).join("");
+  const summary=ev.summary?`<div class="feedback-box suggestion"><h4>评价</h4><p>${esc(valueText(ev.summary))}</p></div>`:"";
+  return `
+    <div class="evaluation-card">
+      <div class="card-head">
+        <h3>面试评分</h3>
+        <div class="score-pill">总分 ${esc(score)}</div>
+      </div>
+      <div class="score-grid">${metrics}</div>
+      <div class="feedback-grid">
+        <div class="feedback-box"><h4>优点</h4><p>${esc(valueText(ev.strengths))}</p></div>
+        <div class="feedback-box"><h4>弱点</h4><p>${esc(valueText(ev.weaknesses))}</p></div>
+        <div class="feedback-box suggestion"><h4>建议</h4><p>${esc(valueText(ev.suggestion))}</p></div>
+        ${summary}
+      </div>
+    </div>
+  `;
+}
+function renderReviewItem(review){
+  const ev=review.evaluation||{};
+  const score=ev.score??"--";
+  const metricRows=evaluationFields.map(([key,label])=>`
+    <div class="review-mini">
+      <span>${label}</span>
+      <strong>${esc(valueText(ev[key]))}</strong>
+    </div>
+  `).join("");
+
+  return `
+    <details class="review-item">
+      <summary><b>第 ${review.turn} 轮</b><span>总分 ${esc(score)}</span></summary>
+      <div class="review-body">
+        <div class="review-qa"><b>问题</b>\n${esc(review.question||"--")}</div>
+        <div class="review-qa"><b>回答</b>\n${esc(review.answer||"--")}</div>
+        <div class="review-mini-grid">${metricRows}</div>
+        <div class="feedback-box"><h4>优点</h4><p>${esc(valueText(ev.strengths))}</p></div>
+        <div class="feedback-box"><h4>弱点</h4><p>${esc(valueText(ev.weaknesses))}</p></div>
+        <div class="feedback-box"><h4>建议</h4><p>${esc(valueText(ev.suggestion))}</p></div>
+      </div>
+    </details>
+  `;
+}
+function renderReviews(){
+  $("reviews").innerHTML=turnReviews.length
+    ? turnReviews.map(renderReviewItem).join("")
+    : `<div class="review-empty">每轮回答后的评分和优缺点会收纳在这里，主聊天区只保留面试追问。</div>`;
+}
+function saveTurnReview(d){
+  const evaluation=parseEvaluation(d.evaluation)||{};
+  $("score").textContent=evaluation.score??"--";
+  turnReviews.push({
+    turn: d.turn_count||turnReviews.length+1,
+    question: d.answered_question,
+    answer: d.answer,
+    evaluation
+  });
+  renderReviews();
+}
+function renderFinalSummary(summary){
+  const body=summary?.summary||summary?.report||summary?.message||"本场面试暂无可总结内容。";
+  return `
+    <div class="final-card">
+      <div class="card-head">
+        <h3>综合评价</h3>
+        <div class="score-pill">${turns} 轮</div>
+      </div>
+      <div class="final-body">${esc(body)}</div>
+    </div>
+  `;
+}
+function renderNextQuestion(question){
+  if(!question)return "";
+  return `
+    <div class="msg ai">
+      <div class="av">AI</div>
+      <div class="next-card">
+        <div class="card-head"><h3>下一问</h3></div>
+        <div class="next-body">${esc(question)}</div>
+      </div>
+    </div>
+  `;
+}
+function showToolResult(title,data){
+  let text=data;
+  if(data&&typeof data==="object"){
+    text=data.answer||data.report||data.message||"操作已完成，详细内容可在右侧 Raw Response 查看。";
+  }
+  text=String(text??"操作已完成，详细内容可在右侧 Raw Response 查看。");
+  addMessage("ai",`${title}\n${text}`);
+}
+async function register(){
+  try{
+    await req("/auth/register","POST",{email:$("email").value,password:$("pwd").value});
+    status("已注册");
+    addMessage("ai","注册成功，现在可以登录。");
+  }catch(e){
+    const message=normalizeError(e);
+    addMessage("ai",message.includes("已注册")?message:"注册失败："+message,{error:true});
+  }
+}
+async function login(){
+  try{
+    const d=await req("/auth/login","POST",{email:$("email").value,password:$("pwd").value});
+    token=d.access_token;
+    status("已登录");
+    addMessage("ai","登录成功，可以开始面试。");
+  }catch(e){addMessage("ai","登录失败："+normalizeError(e),{error:true})}
+}
+async function startInterview(){
+  try{
+    const d=await req("/interview/start","POST",{target_role:$("role").value});
+    sessionId=d.session_id;
+    turns=0;
+    turnReviews=[];
+    $("sid").textContent=sessionId;
+    $("turn").textContent=turns;
+    $("score").textContent="--";
+    renderReviews();
+    status("面试进行中");
+    addMessage("ai",d.first_question||"面试已开始，请回答第一题。");
+  }catch(e){addMessage("ai","开始面试失败："+normalizeError(e),{error:true})}
+}
+async function health(){
+  try{
+    const d=await req("/health");
+    showToolResult("后端健康检查",`状态：${d.status||"--"}\n知识库数量：${d.knowledge_count??"--"}\nPrompt版本：${d.prompt_version||"--"}`);
+  }catch(e){addMessage("ai","健康检查失败："+normalizeError(e),{error:true})}
+}
+async function submitAnswer(){
+  const ans=$("answer").value.trim();
+  if(!ans)return addMessage("ai","请先输入你的回答。",{error:true});
+  if(!sessionId)return addMessage("ai","请先开始面试。",{error:true});
+  addMessage("user",ans);
+  $("answer").value="";
+  try{
+    const d=await req("/interview/session_step","POST",{session_id:Number(sessionId),answer:ans});
+    turns=d.turn_count||turns+1;
+    $("turn").textContent=turns;
+    const next=d.followup_question||d.next_question||"";
+    saveTurnReview(d);
+    addMessage("ai",`已记录第 ${turns} 轮回答。本轮评分和优缺点已收纳到右侧 Question Reviews，我们先继续面试。`);
+    const nextHtml=renderNextQuestion(next);
+    if(nextHtml){
+      $("chat").insertAdjacentHTML("beforeend",nextHtml);
+      scrollChat();
+    }
+  }catch(e){addMessage("ai","提交失败："+normalizeError(e),{error:true})}
+}
+async function finishInterview(){
+  if(!sessionId)return addMessage("ai","当前还没有 Session，请先开始面试。",{error:true});
+  if(!turns)return addMessage("ai","至少完成一轮回答后，再生成综合评价。",{error:true});
+
+  try{
+    const summary=await req(`/interview/session/${sessionId}/summary`);
+    addMessage("ai",renderFinalSummary(summary),{html:true});
+    await req(`/interview/session/${sessionId}/finish`,"POST");
+    status("面试已结束");
+  }catch(e){addMessage("ai","生成综合评价失败："+normalizeError(e),{error:true})}
+}
+async function getSession(){
+  if(!sessionId)return addMessage("ai","当前还没有 Session，请先开始面试。",{error:true});
+  try{
+    const d=await req(`/interview/session/${sessionId}`);
+    const count=Array.isArray(d.turns)?d.turns.length:0;
+    showToolResult("Session 记忆已读取",`当前记录 ${count} 轮对话。详细内容可在右侧 Raw Response 查看。`);
+  }catch(e){addMessage("ai","读取 Session 失败："+normalizeError(e),{error:true})}
+}
+async function askRag(){
+  try{
+    const d=await req("/ask","POST",{question:"什么是RAG？"});
+    showToolResult("RAG 回答",d.answer||d);
+  }catch(e){addMessage("ai","RAG 查询失败："+normalizeError(e),{error:true})}
+}
+async function evalRetrieval(){
+  try{
+    const d=await req("/eval/retrieval");
+    showToolResult(
+      "检索评估完成",
+      `Hit Rate：${formatPercent(d.hit_rate)}
+Recall@1：${formatPercent(d.recall_at_1)}
+Recall@3：${formatPercent(d.recall_at_3)}
+Recall@5：${formatPercent(d.recall_at_5)}
+平均相似度：${formatNumber(d.average_similarity)}`
+    );
+  }catch(e){addMessage("ai","检索评估失败："+normalizeError(e),{error:true})}
+}
+async function weakness(){
+  try{
+    const d=await req("/report/weakness");
+    showToolResult("弱点报告",d.report||d.message||d);
+  }catch(e){addMessage("ai","生成弱点报告失败："+normalizeError(e),{error:true})}
+}
+async function logs(){
+  try{
+    const d=await req("/admin/logs");
+    const logs=(d.logs||[]).slice(-5).map(item=>{
+      if(typeof item==="string")return item;
+      return item.message||item.msg||item.text||"日志详情可在右侧 Raw Response 查看。";
+    }).join("\n");
+    showToolResult("最近日志",logs||"暂无日志。");
+  }catch(e){addMessage("ai","读取日志失败："+normalizeError(e),{error:true})}
+}
+async function uploadKnowledge(){
+  const f=$("file").files[0];
+  if(!f)return addMessage("ai","请选择一个 .txt 文件。",{error:true});
+  const form=new FormData();
+  form.append("file",f);
+  try{
+    const d=await req("/knowledge/upload","POST",form,true);
+    addMessage("ai",`上传成功，新增 ${d.added_count??0} 条知识。`);
+  }catch(e){addMessage("ai","上传失败："+normalizeError(e),{error:true})}
+}
+if(location.protocol==="file:"){
+  $("runNote").style.display="block";
+}
+newDemoEmail();
 </script>
 </body>
 </html>

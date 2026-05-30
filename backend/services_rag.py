@@ -1,14 +1,26 @@
 import os
+import hashlib
 from typing import Dict, Any, List
 
 import chromadb
-from sentence_transformers import SentenceTransformer
 
-from config import CHROMA_PATH, DATA_PATH
+from config import CHROMA_PATH, DATA_PATH, USE_FAKE_EMBEDDINGS
 
-embedding_model = SentenceTransformer(
-    "sentence-transformers/all-MiniLM-L6-v2"
-)
+
+class FakeEmbeddingModel:
+    def encode(self, text: str) -> List[float]:
+        digest = hashlib.sha256(text.encode("utf-8")).digest()
+        return [byte / 255 for byte in digest]
+
+
+if USE_FAKE_EMBEDDINGS:
+    embedding_model = FakeEmbeddingModel()
+else:
+    from sentence_transformers import SentenceTransformer
+
+    embedding_model = SentenceTransformer(
+        "sentence-transformers/all-MiniLM-L6-v2"
+    )
 
 chroma_client = chromadb.PersistentClient(
     path=CHROMA_PATH
@@ -50,11 +62,12 @@ def init_knowledge_base() -> None:
 def add_knowledge_text(text: str) -> str:
     doc_id = str(collection.count() + 1)
     embedding = embedding_model.encode(text)
+    vector = embedding.tolist() if hasattr(embedding, "tolist") else list(embedding)
 
     collection.add(
         ids=[doc_id],
         documents=[text],
-        embeddings=[embedding.tolist()]
+        embeddings=[vector]
     )
 
     return doc_id
@@ -106,12 +119,24 @@ def retrieve_context(query: str, top_k: int = 5, candidate_k: int = 15) -> Dict[
     Top top_k 拼接context
     """
     query_embedding = embedding_model.encode(query)
+    query_vector = query_embedding.tolist() if hasattr(query_embedding, "tolist") else list(query_embedding)
 
-    total_count = max(collection.count(), 1)
+    total_count = collection.count()
+    if total_count == 0:
+        return {
+            "ids": [],
+            "raw_docs": [],
+            "ranked_docs": [],
+            "docs": [],
+            "distances": [],
+            "context": "",
+            "best_distance": None
+        }
+
     real_candidate_k = min(candidate_k, total_count)
 
     results = collection.query(
-        query_embeddings=[query_embedding.tolist()],
+        query_embeddings=[query_vector],
         n_results=real_candidate_k
     )
 
@@ -154,24 +179,54 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
         }
 
     hit = 0
+    recall_hits = {
+        1: 0,
+        3: 0,
+        5: 0
+    }
+    similarity_scores = []
     details = []
 
     for case in test_cases:
         query = case["query"]
         expected = case["expected_keyword"]
 
-        retrieved = retrieve_context(query, top_k=3)
-        context = retrieved["context"]
+        retrieved = retrieve_context(query, top_k=5)
+        ranked_docs = retrieved["ranked_docs"]
+        docs = [item["doc"] for item in ranked_docs]
+        context = "\n".join(docs[:3])
 
-        is_hit = expected in context
+        is_hit = any(expected in doc for doc in docs[:3])
 
         if is_hit:
             hit += 1
+
+        for k in recall_hits:
+            if any(expected in doc for doc in docs[:k]):
+                recall_hits[k] += 1
+
+        distances = [
+            item.get("distance")
+            for item in ranked_docs[:5]
+            if item.get("distance") is not None
+        ]
+        if distances:
+            similarity_scores.append(
+                sum(1 / (1 + max(float(distance), 0)) for distance in distances) / len(distances)
+            )
 
         details.append({
             "query": query,
             "expected_keyword": expected,
             "hit": is_hit,
+            "recall_at_1": any(expected in doc for doc in docs[:1]),
+            "recall_at_3": any(expected in doc for doc in docs[:3]),
+            "recall_at_5": any(expected in doc for doc in docs[:5]),
+            "top_docs": docs[:5],
+            "average_similarity": (
+                sum(1 / (1 + max(float(distance), 0)) for distance in distances) / len(distances)
+                if distances else 0
+            ),
             "context": context
         })
 
@@ -179,5 +234,12 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
         "total": len(test_cases),
         "hit": hit,
         "hit_rate": hit / len(test_cases),
+        "recall_at_1": recall_hits[1] / len(test_cases),
+        "recall_at_3": recall_hits[3] / len(test_cases),
+        "recall_at_5": recall_hits[5] / len(test_cases),
+        "average_similarity": (
+            sum(similarity_scores) / len(similarity_scores)
+            if similarity_scores else 0
+        ),
         "details": details
     }

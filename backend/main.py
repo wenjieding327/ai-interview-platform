@@ -1,5 +1,7 @@
 from datetime import datetime
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+import time
+import os
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -54,6 +56,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    start_time = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        log_event("api_request", {
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "duration_ms": duration_ms
+        })
+        return response
+
+    except Exception as exc:
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        log_event("api_request_failed", {
+            "method": request.method,
+            "path": request.url.path,
+            "duration_ms": duration_ms,
+            "error_type": type(exc).__name__,
+            "error": str(exc)
+        })
+        raise
+
+
 def parse_turns(turns_json: str):
     try:
         return json.loads(turns_json or "[]")
@@ -63,6 +93,35 @@ def parse_turns(turns_json: str):
 
 def dump_turns(turns):
     return json.dumps(turns, ensure_ascii=False)
+
+
+def load_retrieval_eval_cases():
+    path = os.path.join(os.path.dirname(__file__), "data", "eval_cases.json")
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            cases = json.load(f)
+
+        if isinstance(cases, list) and cases:
+            return cases
+
+    except Exception as exc:
+        log_event("retrieval_eval_cases_load_failed", {"error": str(exc)})
+
+    return [
+        {
+            "query": "什么是RAG",
+            "expected_keyword": "检索增强生成"
+        },
+        {
+            "query": "为什么需要向量数据库",
+            "expected_keyword": "语义相似度"
+        },
+        {
+            "query": "Agent有什么能力",
+            "expected_keyword": "工具调用"
+        }
+    ]
 
 
 @app.get("/")
@@ -483,26 +542,7 @@ def eval_retrieval(current_user: User = Depends(get_current_user)):
     这不是为了给用户用，而是为了给面试官看：
     项目不是只调API，而是开始有AI系统评测意识。
     """
-    test_cases = [
-        {
-            "query": "什么是RAG",
-            "expected_keyword": "检索增强生成"
-        },
-        {
-            "query": "为什么需要向量数据库",
-            "expected_keyword": "语义相似度"
-        },
-        {
-            "query": "Agent有什么能力",
-            "expected_keyword": "工具调用"
-        },
-        {
-            "query": "Token是什么",
-            "expected_keyword": "基本单位"
-        }
-    ]
-
-    return evaluate_retrieval(test_cases)
+    return evaluate_retrieval(load_retrieval_eval_cases())
 
 
 

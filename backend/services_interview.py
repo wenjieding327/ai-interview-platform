@@ -4,6 +4,7 @@ import json
 from services_llm import call_llm
 from services_rag import retrieve_context
 from prompt_registry import PROMPTS, PROMPT_VERSION
+from services_logging import log_event
 
 
 def answer_with_rag(question: str) -> Dict[str, Any]:
@@ -105,6 +106,67 @@ def evaluate_answer(question: str, answer: str, target_role: str = "", turns: Li
     )
 
 
+def normalize_evaluation(evaluation: str) -> str:
+    required_defaults = {
+        "score": None,
+        "technical_accuracy": "未提供",
+        "rag_understanding": "未提供",
+        "agent_understanding": "未提供",
+        "backend_understanding": "未提供",
+        "project_depth": "未提供",
+        "strengths": [],
+        "weaknesses": [],
+        "suggestion": "建议继续补充回答中的工程细节。"
+    }
+
+    parsed = None
+
+    try:
+        parsed = json.loads(evaluation)
+
+    except json.JSONDecodeError:
+        start = evaluation.find("{")
+        end = evaluation.rfind("}")
+
+        if start != -1 and end != -1 and end > start:
+            try:
+                parsed = json.loads(evaluation[start:end + 1])
+            except json.JSONDecodeError:
+                parsed = None
+
+    if not isinstance(parsed, dict):
+        log_event("evaluation_parse_fallback", {
+            "raw_preview": evaluation[:300]
+        })
+        parsed = {
+            **required_defaults,
+            "weaknesses": ["LLM 评分格式不稳定，已触发兜底解析。"],
+            "suggestion": evaluation.strip() or required_defaults["suggestion"]
+        }
+
+    normalized = {
+        **required_defaults,
+        **parsed
+    }
+
+    try:
+        if normalized["score"] is not None:
+            score = float(normalized["score"])
+            normalized["score"] = max(0, min(100, round(score)))
+
+    except (TypeError, ValueError):
+        normalized["score"] = None
+
+    for key in ("strengths", "weaknesses"):
+        value = normalized[key]
+        if isinstance(value, str):
+            normalized[key] = [value]
+        elif not isinstance(value, list):
+            normalized[key] = [str(value)]
+
+    return json.dumps(normalized, ensure_ascii=False)
+
+
 def generate_followup(
     question: str,
     answer: str,
@@ -149,12 +211,13 @@ def run_interview_step(
 ) -> Dict[str, Any]:
     turns = turns or []
 
-    evaluation = evaluate_answer(
+    evaluation_raw = evaluate_answer(
         question=question,
         answer=answer,
         target_role=target_role,
         turns=turns
     )
+    evaluation = normalize_evaluation(evaluation_raw)
 
     followup_question = generate_followup(
         question=question,

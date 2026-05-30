@@ -1,0 +1,11 @@
+.env
+backend/.env
+storage/
+backend/storage/
+backend/.test_storage/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/

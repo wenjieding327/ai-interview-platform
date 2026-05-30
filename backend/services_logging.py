@@ -3,8 +3,9 @@ import os
 from datetime import datetime
 from typing import Dict, Any
 
-LOG_PATH = "./storage/app_events.jsonl"
-os.makedirs("./storage", exist_ok=True)
+from config import LOG_PATH
+
+os.makedirs(os.path.dirname(LOG_PATH) or ".", exist_ok=True)
 
 
 def log_event(event_type: str, payload: Dict[str, Any]) -> None:

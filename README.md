@@ -90,3 +90,26 @@ AI Interview Training Platform
 8. 如何设计检索评测 hit rate
 9. 为什么需要 Prompt 版本管理
 10. 为什么需要缓存和日志
+
+## 工程化升级亮点
+
+- 使用 pytest + FastAPI TestClient 覆盖注册、登录、JWT 鉴权、面试 Session、多轮回答、RAG 问答和健康检查。
+- 针对重复注册、非法邮箱、超长密码、未登录访问、错误 token、空回答等异常输入设计边界测试。
+- 检索评估接口返回 Hit Rate、Recall@1、Recall@3、Recall@5 和平均相似度，便于量化 RAG 召回质量。
+- LLM 输出支持前端 JSON 解析兜底，字段缺失时不崩溃，原始响应保留在 Debug 面板。
+- 后端增加请求日志中间件，记录接口路径、状态码、耗时和异常类型，便于线上排查。
+- 配置 GitHub Actions CI，在 push / PR 时运行后端编译和 pytest。
+
+## 本地前端访问
+
+不要直接双击 `frontend/index.html` 作为主要测试方式，`file://` 可能触发浏览器安全策略。推荐使用：
+
+```powershell
+py -m http.server 4173 --bind 127.0.0.1 --directory frontend
+```
+
+然后打开：
+
+```text
+http://127.0.0.1:4173/
+```
