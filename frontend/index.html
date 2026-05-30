@@ -516,8 +516,54 @@ function saveTurnReview(d){
   });
   renderReviews();
 }
+function normalizeScore(value){
+  const score=Number(value);
+  return Number.isFinite(score)?score:null;
+}
+function averageScore(){
+  const scores=turnReviews
+    .map(item=>normalizeScore(item.evaluation?.score))
+    .filter(score=>score!==null);
+
+  if(!scores.length)return null;
+  return Math.round(scores.reduce((sum,score)=>sum+score,0)/scores.length);
+}
+function collectUnique(field){
+  const values=[];
+  turnReviews.forEach(item=>{
+    const raw=item.evaluation?.[field];
+    const list=Array.isArray(raw)?raw:[raw];
+    list.filter(Boolean).forEach(value=>{
+      const text=String(value).trim();
+      if(text&&!values.includes(text))values.push(text);
+    });
+  });
+  return values.slice(0,4);
+}
+function buildLocalSummary(){
+  const avg=averageScore();
+  const strengths=collectUnique("strengths");
+  const weaknesses=collectUnique("weaknesses");
+  const suggestions=collectUnique("suggestion");
+  const scoreLine=avg===null
+    ? "本场面试已完成，系统记录了你的每轮回答。"
+    : `本场面试共完成 ${turns} 轮，平均得分约为 ${avg} 分。`;
+
+  return [
+    scoreLine,
+    "",
+    "主要优势：",
+    strengths.length?strengths.map(item=>`- ${item}`).join("\n"):"- 回答过程已完成，建议结合右侧逐题 Review 继续复盘。",
+    "",
+    "主要短板：",
+    weaknesses.length?weaknesses.map(item=>`- ${item}`).join("\n"):"- 暂未识别到明确短板。",
+    "",
+    "下一步建议：",
+    suggestions.length?suggestions.map(item=>`- ${item}`).join("\n"):"- 继续补充 RAG 评估、Agent 状态管理、异常处理和部署监控细节。"
+  ].join("\n");
+}
 function renderFinalSummary(summary){
-  const body=summary?.summary||summary?.report||summary?.message||"本场面试暂无可总结内容。";
+  const body=summary?.summary||summary?.report||summary?.message||buildLocalSummary();
   return `
     <div class="final-card">
       <div class="card-head">
@@ -598,7 +644,11 @@ async function submitAnswer(){
     $("turn").textContent=turns;
     const next=d.followup_question||d.next_question||"";
     saveTurnReview(d);
-    addMessage("ai",`已记录第 ${turns} 轮回答。本轮评分和优缺点已收纳到右侧 Question Reviews，我们先继续面试。`);
+    if(turns===1){
+      addMessage("ai","已记录。本轮评分和优缺点已放到右侧 Question Reviews。");
+    }else{
+      addMessage("ai","已记录。");
+    }
     const nextHtml=renderNextQuestion(next);
     if(nextHtml){
       $("chat").insertAdjacentHTML("beforeend",nextHtml);
@@ -610,12 +660,17 @@ async function finishInterview(){
   if(!sessionId)return addMessage("ai","当前还没有 Session，请先开始面试。",{error:true});
   if(!turns)return addMessage("ai","至少完成一轮回答后，再生成综合评价。",{error:true});
 
+  addMessage("ai",renderFinalSummary(),{html:true});
+  status("面试已结束");
+
   try{
-    const summary=await req(`/interview/session/${sessionId}/summary`);
-    addMessage("ai",renderFinalSummary(summary),{html:true});
     await req(`/interview/session/${sessionId}/finish`,"POST");
-    status("面试已结束");
-  }catch(e){addMessage("ai","生成综合评价失败："+normalizeError(e),{error:true})}
+  }catch(e){
+    raw({
+      warning: "finish_session_failed",
+      message: normalizeError(e)
+    });
+  }
 }
 async function getSession(){
   if(!sessionId)return addMessage("ai","当前还没有 Session，请先开始面试。",{error:true});
