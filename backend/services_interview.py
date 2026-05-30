@@ -1,10 +1,24 @@
 from typing import Dict, Any, List
 import json
+import re
 
 from services_llm import call_llm
 from services_rag import retrieve_context
 from prompt_registry import PROMPTS, PROMPT_VERSION
 from services_logging import log_event
+
+LOW_EFFORT_ANSWERS = {
+    "?", "？", "??", "？？", ".", "...", "。", "xxx", "xx", "x",
+    "hello", "hi", "ok", "嗯", "哦", "好", "好的", "你好",
+    "我知道", "不知道", "不清楚", "不会", "没有", "随便"
+}
+
+TECHNICAL_TERMS = {
+    "rag", "agent", "llm", "api", "fastapi", "embedding", "chroma",
+    "vector", "token", "jwt", "prompt", "rerank", "recall", "pytest",
+    "知识库", "检索", "向量", "召回", "重排", "后端", "接口", "数据库",
+    "日志", "测试", "部署", "模型", "评估"
+}
 
 
 def answer_with_rag(question: str) -> Dict[str, Any]:
@@ -79,6 +93,52 @@ def generate_first_question(target_role: str) -> Dict[str, Any]:
         "first_question": question,
         "prompt_version": PROMPT_VERSION
     }
+
+
+def normalize_answer_text(answer: str) -> str:
+    return re.sub(r"\s+", "", (answer or "").strip().lower())
+
+
+def is_low_effort_answer(answer: str) -> bool:
+    cleaned = normalize_answer_text(answer)
+
+    if not cleaned:
+        return True
+
+    if cleaned in LOW_EFFORT_ANSWERS:
+        return True
+
+    meaningful_chars = re.findall(r"[a-z0-9\u4e00-\u9fff]", cleaned)
+    if len(meaningful_chars) < 8:
+        return True
+
+    technical_hits = sum(1 for term in TECHNICAL_TERMS if term in cleaned)
+    if len(cleaned) < 20 and technical_hits == 0:
+        return True
+
+    return False
+
+
+def low_effort_evaluation() -> str:
+    return json.dumps({
+        "score": 0,
+        "technical_accuracy": 0,
+        "rag_understanding": 0,
+        "agent_understanding": 0,
+        "backend_understanding": 0,
+        "project_depth": 0,
+        "strengths": ["暂无有效回答内容"],
+        "weaknesses": ["回答过短、过于泛泛，或没有回应题目中的技术点"],
+        "suggestion": "请结合具体方案、接口设计、RAG流程、Agent状态或工程实践重新回答。"
+    }, ensure_ascii=False)
+
+
+def low_effort_followup(question: str) -> str:
+    return (
+        "刚才的回答信息不足，无法判断真实能力。请重新围绕上一题作答："
+        f"{question}\n\n"
+        "请至少说明你的设计思路、关键技术选择、接口/数据流，以及一个你会如何验证效果的指标。"
+    )
 
 
 def evaluate_answer(question: str, answer: str, target_role: str = "", turns: List[Dict[str, Any]] | None = None) -> str:
@@ -210,6 +270,19 @@ def run_interview_step(
     turns: List[Dict[str, Any]] | None = None
 ) -> Dict[str, Any]:
     turns = turns or []
+
+    if is_low_effort_answer(answer):
+        evaluation = low_effort_evaluation()
+        followup_question = low_effort_followup(question)
+
+        return {
+            "target_role": target_role,
+            "question": question,
+            "answer": answer,
+            "evaluation": evaluation,
+            "followup_question": followup_question,
+            "prompt_version": PROMPT_VERSION
+        }
 
     evaluation_raw = evaluate_answer(
         question=question,

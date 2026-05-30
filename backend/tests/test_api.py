@@ -22,7 +22,7 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-secret")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
-from services_interview import normalize_evaluation  # noqa: E402
+from services_interview import is_low_effort_answer, normalize_evaluation  # noqa: E402
 
 client = TestClient(app)
 
@@ -189,3 +189,27 @@ def test_llm_evaluation_normalization_fallback():
     non_numeric = json.loads(normalize_evaluation('{"score":"high","strengths":"结构清楚"}'))
     assert non_numeric["score"] is None
     assert non_numeric["strengths"] == ["结构清楚"]
+
+
+def test_low_effort_answer_gets_zero_score():
+    auth = register_and_login()
+    assert is_low_effort_answer("我知道")
+    assert is_low_effort_answer("?")
+
+    start = client.post(
+        "/interview/start",
+        headers=auth["headers"],
+        json={"target_role": "AI应用开发实习生"}
+    )
+    assert start.status_code == 200
+
+    step = client.post(
+        "/interview/session_step",
+        headers=auth["headers"],
+        json={"session_id": start.json()["session_id"], "answer": "我知道"}
+    )
+    assert step.status_code == 200
+
+    evaluation = json.loads(step.json()["evaluation"])
+    assert evaluation["score"] == 0
+    assert evaluation["technical_accuracy"] == 0
