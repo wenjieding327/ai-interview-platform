@@ -298,7 +298,7 @@ summary::-webkit-details-marker{display:none}
       <div style="display:flex;gap:10px;align-items:center">
         <span class="pill"><span class="dot"></span><span id="topStatus">Ready</span></span>
         <button class="secondary" onclick="getSession()">查看记忆</button>
-        <button onclick="finishInterview()">结束并总结</button>
+        <button id="finishBtn" onclick="finishInterview()">结束并总结</button>
       </div>
     </div>
 
@@ -312,7 +312,7 @@ summary::-webkit-details-marker{display:none}
     <div class="composer">
       <div class="composer-grid">
         <textarea id="answer" placeholder="输入你的回答，例如：RAG 是检索增强生成，它会先从知识库检索相关上下文..."></textarea>
-        <button onclick="submitAnswer()">发送</button>
+        <button id="sendBtn" onclick="submitAnswer()">发送</button>
       </div>
     </div>
   </section>
@@ -358,6 +358,7 @@ summary::-webkit-details-marker{display:none}
 
 <script>
 let token="", sessionId=null, turns=0, turnReviews=[];
+let interviewFinished=false, isSubmitting=false, summaryShown=false;
 const $=id=>document.getElementById(id);
 const evaluationFields=[
   ["technical_accuracy","技术准确性"],
@@ -383,6 +384,18 @@ function status(t){
   $("status").innerHTML=`Status: ${esc(t)}<br>Token: ${token?esc(token.slice(0,24))+"...":"none"}<br>Session: ${sessionId||"none"}`;
 }
 function scrollChat(){$("chat").scrollTop=$("chat").scrollHeight}
+function setComposerEnabled(enabled){
+  $("answer").disabled=!enabled;
+  $("sendBtn").disabled=!enabled;
+  $("sendBtn").textContent=enabled?"发送":"已结束";
+}
+function setSubmitting(submitting){
+  isSubmitting=submitting;
+  if(!interviewFinished){
+    $("sendBtn").disabled=submitting;
+    $("sendBtn").textContent=submitting?"提交中":"发送";
+  }
+}
 function addMessage(role,content,{html=false,error=false}={}){
   const d=document.createElement("div");
   d.className="msg "+(role==="ai"?"ai":"user");
@@ -664,10 +677,15 @@ async function startInterview(){
     sessionId=d.session_id;
     turns=0;
     turnReviews=[];
+    interviewFinished=false;
+    summaryShown=false;
     $("sid").textContent=sessionId;
     $("turn").textContent=turns;
     $("score").textContent="--";
     renderReviews();
+    setComposerEnabled(true);
+    $("finishBtn").disabled=false;
+    $("finishBtn").textContent="结束并总结";
     status("面试进行中");
     addMessage("ai",d.first_question||"面试已开始，请回答第一题。");
   }catch(e){addMessage("ai","开始面试失败："+normalizeError(e),{error:true})}
@@ -680,10 +698,15 @@ async function health(){
 }
 async function submitAnswer(){
   const ans=$("answer").value.trim();
+  if(interviewFinished){
+    return addMessage("ai","本场面试已结束。请点击“开始面试”开启新一场。");
+  }
+  if(isSubmitting)return;
   if(!ans)return addMessage("ai","请先输入你的回答。",{error:true});
   if(!sessionId)return addMessage("ai","请先开始面试。",{error:true});
   addMessage("user",ans);
   $("answer").value="";
+  setSubmitting(true);
   try{
     const d=await req("/interview/session_step","POST",{session_id:Number(sessionId),answer:ans});
     turns=d.turn_count||turns+1;
@@ -703,13 +726,21 @@ async function submitAnswer(){
   }catch(e){
     $("answer").value=ans;
     addMessage("ai","提交失败："+normalizeError(e),{error:true});
+  }finally{
+    setSubmitting(false);
   }
 }
 async function finishInterview(){
   if(!sessionId)return addMessage("ai","当前还没有 Session，请先开始面试。",{error:true});
   if(!turns)return addMessage("ai","至少完成一轮回答后，再生成综合评价。",{error:true});
+  if(summaryShown)return addMessage("ai","综合评价已经生成。请点击“开始面试”开启新一场。");
 
+  summaryShown=true;
+  interviewFinished=true;
   addMessage("ai",renderFinalSummary(),{html:true});
+  setComposerEnabled(false);
+  $("finishBtn").disabled=true;
+  $("finishBtn").textContent="已结束";
   status("面试已结束");
 
   try{

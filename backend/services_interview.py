@@ -20,6 +20,15 @@ TECHNICAL_TERMS = {
     "日志", "测试", "部署", "模型", "评估"
 }
 
+NEXT_QUESTION_BANK = [
+    "请描述一个你会参与设计的 AI 应用场景，例如智能客服、文档问答助手或面试训练系统。你会如何把 LLM、知识库和业务流程结合起来？",
+    "如果一个 RAG 系统回答不准确，你会如何从数据切分、Embedding、召回、Rerank 和 Prompt 五个环节定位问题？",
+    "请设计一个 /ask 问答接口的数据流：从用户请求、JWT 鉴权、检索知识库、调用 LLM，到返回结果和记录日志，你会怎么实现？",
+    "如果 LLM 返回的评分 JSON 格式不稳定，前端和后端分别应该做哪些兜底，避免页面崩溃或展示原始 JSON？",
+    "你会如何评估一个知识库系统的效果？请说明 Hit Rate、Recall@K、平均相似度或人工评测集在项目中的作用。",
+    "如果要把这个 AI 面试平台部署到 Vercel 和 Railway，你会如何设计环境变量、健康检查、日志排查和自动化测试流程？"
+]
+
 
 def answer_with_rag(question: str) -> Dict[str, Any]:
     retrieved = retrieve_context(question, top_k=5, candidate_k=15)
@@ -133,12 +142,14 @@ def low_effort_evaluation() -> str:
     }, ensure_ascii=False)
 
 
-def low_effort_followup(question: str) -> str:
-    return (
-        "刚才的回答信息不足，无法判断真实能力。请重新围绕上一题作答："
-        f"{question}\n\n"
-        "请至少说明你的设计思路、关键技术选择、接口/数据流，以及一个你会如何验证效果的指标。"
-    )
+def next_question_after_low_effort(target_role: str, turns: List[Dict[str, Any]]) -> str:
+    index = len(turns) % len(NEXT_QUESTION_BANK)
+    question = NEXT_QUESTION_BANK[index]
+
+    if target_role:
+        return f"{question}\n\n请尽量结合“{target_role}”这个岗位来回答。"
+
+    return question
 
 
 def evaluate_answer(question: str, answer: str, target_role: str = "", turns: List[Dict[str, Any]] | None = None) -> str:
@@ -273,7 +284,7 @@ def run_interview_step(
 
     if is_low_effort_answer(answer):
         evaluation = low_effort_evaluation()
-        followup_question = low_effort_followup(question)
+        followup_question = next_question_after_low_effort(target_role, turns)
 
         return {
             "target_role": target_role,

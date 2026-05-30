@@ -213,3 +213,5 @@ def test_low_effort_answer_gets_zero_score():
     evaluation = json.loads(step.json()["evaluation"])
     assert evaluation["score"] == 0
     assert evaluation["technical_accuracy"] == 0
+    assert "刚才的回答信息不足" not in step.json()["next_question"]
+    assert "上一题" not in step.json()["next_question"]
