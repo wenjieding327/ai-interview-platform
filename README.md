@@ -213,10 +213,10 @@ The tests use fake LLM and fake embeddings to avoid network, cost, and randomnes
 
 ### Railway Backend
 
-Railway runs the backend with Docker:
+Railway runs the backend with Docker from the repository root:
 
 ```text
-backend/Dockerfile
+Dockerfile
 ```
 
 Important variables:
@@ -250,7 +250,7 @@ The frontend is static HTML/CSS/JS and calls the Railway backend URL. The backen
 - Fixed Railway deployment issues caused by nested directories and `$PORT` startup command.
 - Added Railway-safe fake embedding fallback and lazy model initialization.
 - Prevented raw evaluation JSON from appearing in the chat UI.
-- Added low-effort answer detection so `"我知道"` or `"?"` scores 0 and advances to a new question.
+- Added low-effort answer detection so `"我不知道"` or `"?"` scores 0 and advances to a new question.
 - Added silent login retry for expired JWT during interview submission.
 
 ## Resume Bullets
@@ -281,3 +281,4 @@ See also:
 
 - [Project brief](docs/PROJECT_BRIEF.md)
 - [Demo script](docs/DEMO_SCRIPT.md)
+- [Deployment checklist](docs/DEPLOYMENT_CHECKLIST.md)
