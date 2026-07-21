@@ -16,10 +16,17 @@ http://127.0.0.1:8000/docs
 
 前端：
 
-直接打开：
+推荐用本地 HTTP server 打开，不要把 `file://` 作为主要测试方式：
+
+```powershell
+cd ..
+py -m http.server 4173 --bind 127.0.0.1 --directory frontend
+```
+
+然后访问：
 
 ```text
-frontend/index.html
+http://127.0.0.1:4173/
 ```
 
 ## 推荐测试顺序
@@ -33,3 +40,5 @@ frontend/index.html
 7. `/eval/retrieval`
 8. `/report/weakness`
 9. `/admin/logs`
+10. `/agent/tools`
+11. `/agent/tool-call`

@@ -176,7 +176,11 @@ def test_rag_and_retrieval_eval_metrics():
     assert "recall_at_3" in body
     assert "recall_at_5" in body
     assert "average_similarity" in body
+    assert "total_cases" in body
+    assert "category_summary" in body
+    assert "misses" in body
     assert isinstance(body["details"], list)
+    assert body["total_cases"] >= 30
 
 
 def test_llm_evaluation_normalization_fallback():
@@ -215,3 +219,40 @@ def test_low_effort_answer_gets_zero_score():
     assert evaluation["technical_accuracy"] == 0
     assert "刚才的回答信息不足" not in step.json()["next_question"]
     assert "上一题" not in step.json()["next_question"]
+
+
+def test_agent_tool_router_selects_and_executes_tools():
+    auth = register_and_login()
+
+    tools = client.get("/agent/tools", headers=auth["headers"])
+    assert tools.status_code == 200
+    tool_names = {tool["name"] for tool in tools.json()["tools"]}
+    assert {"ask_rag", "retrieval_eval", "weakness_report", "logs"}.issubset(tool_names)
+
+    retrieval = client.post(
+        "/agent/tool-call",
+        headers=auth["headers"],
+        json={"intent": "请检查RAG检索评估，给我Recall@K和Hit Rate"}
+    )
+    assert retrieval.status_code == 200
+    retrieval_body = retrieval.json()
+    assert retrieval_body["selected_tool"] == "retrieval_eval"
+    assert retrieval_body["result"]["total_cases"] >= 30
+
+    rag = client.post(
+        "/agent/tool-call",
+        headers=auth["headers"],
+        json={"intent": "什么是Function Calling？"}
+    )
+    assert rag.status_code == 200
+    rag_body = rag.json()
+    assert rag_body["selected_tool"] == "ask_rag"
+    assert rag_body["result"]["answer"]
+
+    logs = client.post(
+        "/agent/tool-call",
+        headers=auth["headers"],
+        json={"intent": "Railway后端报错了，帮我看日志"}
+    )
+    assert logs.status_code == 200
+    assert logs.json()["selected_tool"] == "logs"

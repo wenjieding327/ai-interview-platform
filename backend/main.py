@@ -17,7 +17,8 @@ from schemas import (
     AskRequest,
     StartInterviewRequest,
     InterviewStepRequest,
-    SessionStepRequest
+    SessionStepRequest,
+    AgentToolRequest
 )
 from auth import (
     hash_password,
@@ -38,6 +39,7 @@ from services_interview import (
     run_interview_step,
     generate_weakness_report
 )
+from services_agent import available_agent_tools, select_agent_tool
 
 Base.metadata.create_all(bind=engine)
 
@@ -121,6 +123,40 @@ def load_retrieval_eval_cases():
             "expected_keyword": "工具调用"
         }
     ]
+
+
+def build_weakness_report(db: Session, current_user: User):
+    rows = (
+        db.query(InterviewHistory)
+        .filter(InterviewHistory.user_id == current_user.id)
+        .order_by(InterviewHistory.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    if not rows:
+        return {
+            "message": "No history yet"
+        }
+
+    records = []
+
+    for row in rows:
+        records.append({
+            "target_role": row.target_role,
+            "question": row.question,
+            "answer": row.answer,
+            "evaluation": row.evaluation,
+            "followup_question": row.followup_question
+        })
+
+    history_text = json.dumps(records, ensure_ascii=False, indent=2)
+    report = generate_weakness_report(history_text)
+
+    return {
+        "report": report,
+        "source_turns": len(records)
+    }
 
 
 @app.get("/")
@@ -488,37 +524,7 @@ def weakness_report(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    rows = (
-        db.query(InterviewHistory)
-        .filter(InterviewHistory.user_id == current_user.id)
-        .order_by(InterviewHistory.created_at.desc())
-        .limit(10)
-        .all()
-    )
-
-    if not rows:
-        return {
-            "message": "No history yet"
-        }
-
-    records = []
-
-    for row in rows:
-        records.append({
-            "target_role": row.target_role,
-            "question": row.question,
-            "answer": row.answer,
-            "evaluation": row.evaluation,
-            "followup_question": row.followup_question
-        })
-
-    history_text = json.dumps(records, ensure_ascii=False, indent=2)
-
-    report = generate_weakness_report(history_text)
-
-    return {
-        "report": report
-    }
+    return build_weakness_report(db, current_user)
 
 
 @app.get("/prompts")
@@ -549,6 +555,65 @@ def eval_retrieval(current_user: User = Depends(get_current_user)):
 def admin_logs(current_user: User = Depends(get_current_user)):
     return {
         "logs": read_logs(limit=100)
+    }
+
+
+@app.get("/agent/tools")
+def agent_tools(current_user: User = Depends(get_current_user)):
+    return {
+        "tools": available_agent_tools()
+    }
+
+
+@app.post("/agent/tool-call")
+def agent_tool_call(
+    data: AgentToolRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Lightweight Tool Calling demo.
+
+    This keeps the project dependency-light and testable while showing the same
+    production idea used by Agent frameworks: infer intent, choose a tool,
+    execute it, and return a trace.
+    """
+    decision = select_agent_tool(data.intent)
+    selected_tool = decision["selected_tool"]
+    query = data.question or data.intent
+
+    if selected_tool == "ask_rag":
+        result = answer_with_rag(query)
+
+    elif selected_tool == "retrieval_eval":
+        result = evaluate_retrieval(load_retrieval_eval_cases())
+
+    elif selected_tool == "weakness_report":
+        result = build_weakness_report(db, current_user)
+
+    elif selected_tool == "logs":
+        result = {
+            "logs": read_logs(limit=20)
+        }
+
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported agent tool")
+
+    log_event("agent_tool_executed", {
+        "selected_tool": selected_tool,
+        "intent_preview": data.intent[:200]
+    })
+
+    return {
+        "intent": data.intent,
+        "selected_tool": selected_tool,
+        "reason": decision["reason"],
+        "tool_scores": decision["scores"],
+        "tool_trace": {
+            "available_tools": decision["available_tools"],
+            "executed_tool": selected_tool
+        },
+        "result": result
     }
 
 

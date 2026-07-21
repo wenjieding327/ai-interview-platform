@@ -8,5 +8,26 @@ FastAPI是什么：FastAPI是Python后端框架，常用于构建API服务，支
 POST请求是什么：POST请求常用于向后端提交数据，例如聊天内容、登录信息、表单数据等。
 Context Window是什么：Context Window是大模型一次请求中能够看到的最大上下文长度。
 Token是什么：Token是大模型处理文本的基本单位，API通常按照输入和输出token收费。
-LangGraph是什么：LangGraph是用于构建有状态、多步骤Agent工作流的框架。
-Function Calling是什么：Function Calling是让大模型根据用户任务选择并调用外部函数或工具的能力。
+JWT认证是什么：JWT认证是在登录成功后签发access_token，前端后续请求通过Authorization Bearer携带token，后端解析后识别当前用户。
+Pydantic是什么：Pydantic用于定义请求和响应的数据结构，并在FastAPI中自动执行字段校验和错误提示。
+SQLite是什么：SQLite是轻量级关系型数据库，适合本地演示和小型项目，但高并发生产环境通常会迁移到PostgreSQL。
+CORS是什么：CORS是浏览器跨域资源共享策略，当前端Vercel访问Railway后端时，后端需要返回Access-Control-Allow-Origin。
+Docker是什么：Docker用于将应用代码、依赖和启动命令打包成容器，使Railway等云平台能够稳定部署。
+Railway是什么：Railway是后端部署平台，可以运行FastAPI服务，并通过环境变量配置PORT、API Key和JWT_SECRET_KEY。
+Vercel是什么：Vercel是前端部署平台，适合部署静态HTML页面或Next.js应用，并通过公网URL访问。
+环境变量是什么：环境变量用于配置DEEPSEEK_API_KEY、JWT_SECRET_KEY、DATABASE_URL等敏感或环境相关参数，不能写死进代码。
+API Key安全是什么：API Key不能放进前端或提交到GitHub，应该保存在后端.env或云平台Variables中。
+GitHub Actions是什么：GitHub Actions可以在push或pull request时自动运行pytest和代码检查，形成CI自动化测试流程。
+pytest是什么：pytest是Python测试框架，可以配合FastAPI TestClient测试注册、登录、JWT鉴权、面试会话和RAG接口。
+TestClient是什么：FastAPI TestClient可以在测试环境中模拟HTTP请求，验证接口状态码、响应JSON和认证边界。
+Hit Rate是什么：Hit Rate是RAG检索评估指标，表示检索结果中命中预期答案关键词的比例。
+Recall@K是什么：Recall@K表示前K条检索结果中是否包含目标答案，常用于衡量知识库召回能力。
+平均相似度是什么：平均相似度可以用于观察检索结果整体相关性，通常与Hit Rate和Recall@K一起分析。
+混合检索是什么：混合检索是把向量检索和关键词检索例如BM25结合，兼顾语义相似和精确术语匹配。
+Reranker是什么：Reranker是重排模型或规则，用于对粗召回候选结果重新排序，提升最终提供给LLM的上下文质量。
+Function Calling是什么：Function Calling是让大模型或Agent根据用户意图选择并调用外部函数或工具的能力。
+LangGraph是什么：LangGraph是用于构建有状态、多步骤Agent工作流的框架，可以把工具调用、状态流转和条件分支组织成图。
+日志系统是什么：日志系统记录接口路径、状态码、耗时、错误类型、LLM调用和RAG检索信息，便于线上问题排查。
+低质量回答是什么：低质量回答是指“我知道”“不知道”“？”等缺少有效技术信息的回答，评分系统应直接判低分或0分。
+LLM JSON兜底是什么：LLM JSON兜底是指当模型没有按要求返回合法JSON时，后端和前端进行解析、默认字段填充和降级展示。
+Prompt版本管理是什么：Prompt版本管理把不同任务的system prompt集中维护，便于迭代、回滚和比较模型输出效果。

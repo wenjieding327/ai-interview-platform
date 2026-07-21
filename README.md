@@ -1,57 +1,165 @@
-# AI Interview Training Platform V4 Local Max
+# AI Interview Training Platform
 
-这是一个适合本地电脑运行的 AI 应用开发高含金量项目。
+An AI application project for interview training: **FastAPI + RAG + Stateful Agent + Tool Calling demo + structured evaluation + testing + cloud deployment**.
 
-它不是企业生产环境，但已经包含 AI 应用开发面试里最关键的工程能力展示。
-
-## 核心能力
-
-- FastAPI 后端
-- JWT 登录鉴权
-- SQLite 用户与历史数据库
-- Chroma 持久化向量库
-- SentenceTransformer Embedding
-- RAG Top-K 粗召回
-- 简化 Rerank
-- Prompt 版本管理
-- Stateful Agent Session
-- 面试评分 Agent
-- 基于历史的追问 Agent
-- 弱项分析
-- 知识库上传
-- 检索评测接口
-- LLM 调用缓存
-- 本地日志
-- 简易前端页面
-- Docker 配置
-
-## 它和普通 RAG Demo 的区别
-
-普通 Demo：
+This is not just a chat UI. It is a full AI application workflow:
 
 ```text
-用户问题 -> 向量检索 -> LLM回答
+Vercel Frontend
+  -> Railway FastAPI Backend
+  -> JWT Auth
+  -> SQLite User / Session / History
+  -> Chroma Vector DB
+  -> SentenceTransformer Embeddings
+  -> RAG Retrieval + Rerank
+  -> Interview Agent Scoring + Follow-up
+  -> Tool Router Agent
+  -> Retrieval Evaluation + Logs + Weakness Report
 ```
 
-本项目：
+## Live Demo
+
+- Frontend: https://ai-interview-platform-taupe-chi.vercel.app
+- Backend health: https://selfless-rejoicing-production-4735.up.railway.app/health
+- API docs: https://selfless-rejoicing-production-4735.up.railway.app/docs
+
+Default backend URL used by the frontend:
 
 ```text
-用户注册登录
--> 选择目标岗位
--> RAG检索岗位知识
--> Rerank筛选上下文
--> 生成第一题
--> 创建有状态Session
--> 用户回答
--> 评分Agent
--> 历史驱动追问Agent
--> 保存每轮面试
--> 弱项分析
--> 检索评测
--> 日志和缓存
+https://selfless-rejoicing-production-4735.up.railway.app
 ```
 
-## 启动
+## Why This Project Is Resume-Ready
+
+Most AI demos stop at:
+
+```text
+User question -> Vector search -> LLM answer
+```
+
+This project goes further:
+
+- JWT registration/login and protected APIs
+- Stateful interview sessions with `current_question` and historical `turns`
+- RAG knowledge retrieval using Chroma and SentenceTransformer
+- Candidate reranking before context injection
+- Structured LLM evaluation with JSON fallback
+- Low-effort answer detection and zero-score guardrail
+- Tool Calling style agent router for RAG, retrieval eval, weakness reports, and logs
+- Retrieval evaluation with Hit Rate, Recall@1, Recall@3, Recall@5, misses, and category summaries
+- API logging middleware for status code, path, duration, and errors
+- pytest + FastAPI TestClient coverage
+- GitHub Actions CI
+- Vercel frontend + Railway backend deployment
+
+## Core Features
+
+| Area | Feature |
+|---|---|
+| Auth | Register, login, JWT bearer auth, user-scoped sessions |
+| Interview Agent | Start interview, submit answer, score response, generate next question |
+| RAG | Seed knowledge base, upload `.txt`, retrieve context, rerank candidates |
+| Tool Router | `/agent/tool-call` chooses Ask RAG, Retrieval Eval, Weakness Report, or Logs |
+| Evaluation | Hit Rate, Recall@K, average similarity, category summary, misses |
+| Reliability | LLM JSON fallback, low-effort answer scoring, Railway startup fallback |
+| Observability | Local JSONL logs and `/admin/logs` endpoint |
+| Engineering | pytest, boundary tests, GitHub Actions CI, Docker/Railway config |
+| Frontend | Professional dark UI, scoring cards, next-question cards, right-side console |
+
+## Main User Flow
+
+```text
+1. Register / login
+2. Choose target role
+3. Start interview
+4. Backend retrieves role-related knowledge
+5. LLM generates first question
+6. User submits answer
+7. Backend evaluates answer and generates next question
+8. Frontend stores per-question reviews in the right console
+9. User can inspect RAG eval, weakness report, logs, and raw responses
+10. User ends the interview and gets a summary
+```
+
+## API Map
+
+| Endpoint | Purpose | Auth |
+|---|---|---|
+| `GET /health` | Health check and prompt version | No |
+| `POST /auth/register` | Create user | No |
+| `POST /auth/login` | Return JWT access token | No |
+| `POST /interview/start` | Create stateful interview session | Yes |
+| `POST /interview/session_step` | Score answer, save turn, generate next question | Yes |
+| `GET /interview/session/{session_id}` | Read session memory | Yes |
+| `POST /interview/session/{session_id}/finish` | Mark session finished | Yes |
+| `POST /ask` | RAG question answering | Yes |
+| `POST /knowledge/upload` | Upload `.txt` knowledge base lines | Yes |
+| `GET /eval/retrieval` | Run retrieval evaluation set | Yes |
+| `GET /report/weakness` | Generate weakness report from history | Yes |
+| `GET /admin/logs` | Read recent logs | Yes |
+| `GET /agent/tools` | List available agent tools | Yes |
+| `POST /agent/tool-call` | Route user intent to a backend tool | Yes |
+
+## Tool Calling Demo
+
+The project includes a lightweight deterministic tool router:
+
+```text
+User intent
+  -> select_agent_tool()
+  -> ask_rag | retrieval_eval | weakness_report | logs
+  -> execute selected tool
+  -> return result + tool trace
+```
+
+Example:
+
+```json
+{
+  "intent": "请检查RAG检索评估，给我Recall@K和Hit Rate"
+}
+```
+
+Response includes:
+
+```json
+{
+  "selected_tool": "retrieval_eval",
+  "reason": "...",
+  "tool_scores": {},
+  "tool_trace": {},
+  "result": {}
+}
+```
+
+This is intentionally dependency-light and testable. In a production-grade extension, the same contract can be replaced with OpenAI/DeepSeek function calling or a LangGraph workflow.
+
+## Retrieval Evaluation
+
+The evaluation set is stored in:
+
+```text
+backend/data/eval_cases.json
+```
+
+It covers RAG, embeddings, vector DB, auth, deployment, testing, observability, Function Calling, and prompt engineering.
+
+Returned metrics:
+
+- `hit_rate`
+- `recall_at_1`
+- `recall_at_3`
+- `recall_at_5`
+- `average_similarity`
+- `category_summary`
+- `misses`
+- `recommendations`
+
+This lets the project say more than “I used RAG”: it shows how RAG quality is measured.
+
+## Local Development
+
+### Backend
 
 ```powershell
 cd backend
@@ -61,55 +169,115 @@ py -m pip install -r requirements.txt
 py -m uvicorn main:app --reload
 ```
 
-打开：
+Open:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-前端：
+### Frontend
 
-```text
-frontend/index.html
-```
-
-## 简历写法
-
-AI Interview Training Platform  
-基于 FastAPI + Chroma + SentenceTransformer + DeepSeek API 构建 AI 面试训练平台，实现 JWT 登录、岗位定制面试、RAG 检索、简化 Rerank、有状态 Agent Session、回答评分、历史驱动追问、训练历史保存、弱项分析、Prompt 版本管理与检索评测体系。
-
-## 面试可讲点
-
-1. 为什么要 Embedding
-2. Chroma 如何做语义检索
-3. 为什么需要 Rerank
-4. RAG 如何降低幻觉
-5. System Prompt 如何约束回答
-6. Agent Session 如何保存状态
-7. 为什么评分和追问要结合历史 turns
-8. 如何设计检索评测 hit rate
-9. 为什么需要 Prompt 版本管理
-10. 为什么需要缓存和日志
-
-## 工程化升级亮点
-
-- 使用 pytest + FastAPI TestClient 覆盖注册、登录、JWT 鉴权、面试 Session、多轮回答、RAG 问答和健康检查。
-- 针对重复注册、非法邮箱、超长密码、未登录访问、错误 token、空回答等异常输入设计边界测试。
-- 检索评估接口返回 Hit Rate、Recall@1、Recall@3、Recall@5 和平均相似度，便于量化 RAG 召回质量。
-- LLM 输出支持前端 JSON 解析兜底，字段缺失时不崩溃，原始响应保留在 Debug 面板。
-- 后端增加请求日志中间件，记录接口路径、状态码、耗时和异常类型，便于线上排查。
-- 配置 GitHub Actions CI，在 push / PR 时运行后端编译和 pytest。
-
-## 本地前端访问
-
-不要直接双击 `frontend/index.html` 作为主要测试方式，`file://` 可能触发浏览器安全策略。推荐使用：
+Use a local HTTP server instead of opening `frontend/index.html` directly with `file://`.
 
 ```powershell
 py -m http.server 4173 --bind 127.0.0.1 --directory frontend
 ```
 
-然后打开：
+Open:
 
 ```text
 http://127.0.0.1:4173/
 ```
+
+## Tests
+
+```powershell
+py -m pytest
+```
+
+The tests use fake LLM and fake embeddings to avoid network, cost, and randomness:
+
+- health check
+- register/login
+- duplicate register
+- invalid email/password
+- unauthenticated protected APIs
+- interview session flow
+- evaluation JSON contract
+- low-effort answer zero-score behavior
+- RAG answer endpoint
+- retrieval evaluation metrics
+- agent tool router
+
+## Deployment Notes
+
+### Railway Backend
+
+Railway runs the backend with Docker:
+
+```text
+backend/Dockerfile
+```
+
+Important variables:
+
+```text
+DEEPSEEK_API_KEY
+JWT_SECRET_KEY
+DATABASE_URL
+CHROMA_PATH
+LOG_PATH
+USE_FAKE_LLM
+USE_FAKE_EMBEDDINGS
+```
+
+The Dockerfile uses:
+
+```text
+uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+This avoids the common Railway bug where `$PORT` is treated as a literal string.
+
+### Vercel Frontend
+
+The frontend is static HTML/CSS/JS and calls the Railway backend URL. The backend enables CORS for demo deployment.
+
+## Debugging Stories Worth Discussing in Interviews
+
+- Fixed Vercel -> Railway CORS errors by adding FastAPI CORS middleware.
+- Fixed registration 500 caused by bcrypt password length limits.
+- Fixed Railway deployment issues caused by nested directories and `$PORT` startup command.
+- Added Railway-safe fake embedding fallback and lazy model initialization.
+- Prevented raw evaluation JSON from appearing in the chat UI.
+- Added low-effort answer detection so `"我知道"` or `"?"` scores 0 and advances to a new question.
+- Added silent login retry for expired JWT during interview submission.
+
+## Resume Bullets
+
+- Built an AI interview training platform with FastAPI, JWT auth, Chroma vector search, SentenceTransformer embeddings, DeepSeek API, and a stateful interview agent.
+- Implemented RAG retrieval with candidate reranking and retrieval evaluation using Hit Rate, Recall@K, category summaries, and miss analysis.
+- Designed LLM output parsing and fallback logic to handle invalid JSON, missing fields, non-numeric scores, and low-effort answers.
+- Added a Tool Calling style agent router that selects RAG, retrieval evaluation, weakness analysis, or log inspection based on user intent.
+- Wrote pytest + FastAPI TestClient tests for auth, protected APIs, interview sessions, RAG, retrieval metrics, low-effort scoring, and the agent router.
+- Deployed the frontend to Vercel and backend to Railway with Docker, environment variables, CORS, health checks, and request logging.
+
+## Project Limits and Next Steps
+
+This is a strong resume-grade AI application project, not yet a production SaaS.
+
+Good next upgrades:
+
+- PostgreSQL + Alembic migrations
+- Playwright E2E tests
+- Real reranker model such as BGE Reranker
+- Hybrid retrieval with BM25 + vector search
+- LangGraph-based agent workflow
+- Centralized observability and latency dashboards
+- Better role-based access control
+- Exportable interview report PDF
+
+See also:
+
+- [Project brief](docs/PROJECT_BRIEF.md)
+- [Demo script](docs/DEMO_SCRIPT.md)

@@ -7,5 +7,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+*-server-*.log
+backend/storage/*.log
 .venv/
 venv/

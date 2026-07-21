@@ -21,8 +21,14 @@ chroma_client = chromadb.PersistentClient(
     path=CHROMA_PATH
 )
 
+COLLECTION_NAME = (
+    "interview_knowledge_fake"
+    if USE_FAKE_EMBEDDINGS
+    else "interview_knowledge"
+)
+
 collection = chroma_client.get_or_create_collection(
-    name="interview_knowledge"
+    name=COLLECTION_NAME
 )
 
 
@@ -206,8 +212,16 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
     if not test_cases:
         return {
             "total": 0,
+            "total_cases": 0,
             "hit": 0,
-            "hit_rate": 0
+            "hit_rate": 0,
+            "recall_at_1": 0,
+            "recall_at_3": 0,
+            "recall_at_5": 0,
+            "average_similarity": 0,
+            "details": [],
+            "misses": [],
+            "category_summary": {}
         }
 
     hit = 0
@@ -218,10 +232,12 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
     }
     similarity_scores = []
     details = []
+    category_summary: Dict[str, Dict[str, Any]] = {}
 
     for case in test_cases:
         query = case["query"]
         expected = case["expected_keyword"]
+        category = case.get("category", "uncategorized")
 
         retrieved = retrieve_context(query, top_k=5)
         ranked_docs = retrieved["ranked_docs"]
@@ -250,6 +266,7 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
         details.append({
             "query": query,
             "expected_keyword": expected,
+            "category": category,
             "hit": is_hit,
             "recall_at_1": any(expected in doc for doc in docs[:1]),
             "recall_at_3": any(expected in doc for doc in docs[:3]),
@@ -262,16 +279,49 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
             "context": context
         })
 
+        if category not in category_summary:
+            category_summary[category] = {
+                "total": 0,
+                "hit": 0
+            }
+
+        category_summary[category]["total"] += 1
+        if is_hit:
+            category_summary[category]["hit"] += 1
+
+    for category, stats in category_summary.items():
+        stats["hit_rate"] = stats["hit"] / stats["total"] if stats["total"] else 0
+
+    misses = [
+        detail
+        for detail in details
+        if not detail["hit"]
+    ]
+
+    hit_rate = hit / len(test_cases)
+    recall_at_1 = recall_hits[1] / len(test_cases)
+    recall_at_3 = recall_hits[3] / len(test_cases)
+    recall_at_5 = recall_hits[5] / len(test_cases)
+    average_similarity = (
+        sum(similarity_scores) / len(similarity_scores)
+        if similarity_scores else 0
+    )
+
     return {
         "total": len(test_cases),
+        "total_cases": len(test_cases),
         "hit": hit,
-        "hit_rate": hit / len(test_cases),
-        "recall_at_1": recall_hits[1] / len(test_cases),
-        "recall_at_3": recall_hits[3] / len(test_cases),
-        "recall_at_5": recall_hits[5] / len(test_cases),
-        "average_similarity": (
-            sum(similarity_scores) / len(similarity_scores)
-            if similarity_scores else 0
-        ),
+        "hit_rate": hit_rate,
+        "recall_at_1": recall_at_1,
+        "recall_at_3": recall_at_3,
+        "recall_at_5": recall_at_5,
+        "average_similarity": average_similarity,
+        "category_summary": category_summary,
+        "misses": misses,
+        "recommendations": [
+            "Review misses first; they usually indicate chunking, keyword coverage, or rerank issues.",
+            "Compare Recall@1 with Recall@5 to decide whether reranking or retrieval breadth needs improvement.",
+            "Keep eval_cases.json versioned so RAG quality can be checked in CI or before deployment."
+        ],
         "details": details
     }

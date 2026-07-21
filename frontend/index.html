@@ -334,6 +334,7 @@ summary::-webkit-details-marker{display:none}
       <div class="tool-grid">
         <button class="secondary" onclick="health()">Health Check</button>
         <button class="secondary" onclick="askRag()">Ask RAG</button>
+        <button class="secondary" onclick="agentRouter()">Agent Router</button>
         <button class="secondary" onclick="evalRetrieval()">Retrieval Eval</button>
         <button class="secondary" onclick="weakness()">Weakness Report</button>
         <button class="secondary" onclick="logs()">Logs</button>
@@ -766,16 +767,52 @@ async function askRag(){
     showToolResult("RAG 回答",d.answer||d);
   }catch(e){addMessage("ai","RAG 查询失败："+normalizeError(e),{error:true})}
 }
+async function agentRouter(){
+  const typed=$("answer").value.trim();
+  const intent=typed||"请帮我检查这个项目的 RAG 检索评估效果，并说明 Recall@K 指标。";
+  try{
+    const d=await req("/agent/tool-call","POST",{intent,question:typed||null,session_id:sessionId});
+    const result=d.result||{};
+    let detail="";
+
+    if(d.selected_tool==="retrieval_eval"){
+      detail=[
+        `Cases：${result.total_cases??result.total??"--"}`,
+        `Hit Rate：${formatPercent(result.hit_rate)}`,
+        `Recall@1：${formatPercent(result.recall_at_1)}`,
+        `Recall@3：${formatPercent(result.recall_at_3)}`,
+        `Recall@5：${formatPercent(result.recall_at_5)}`,
+        `Misses：${Array.isArray(result.misses)?result.misses.length:"--"}`
+      ].join("\n");
+    }else if(d.selected_tool==="ask_rag"){
+      detail=result.answer||"RAG 工具已执行，详细结果可在右侧 Raw Response 查看。";
+    }else if(d.selected_tool==="weakness_report"){
+      detail=result.report||result.message||"弱点报告已生成，详细结果可在右侧 Raw Response 查看。";
+    }else if(d.selected_tool==="logs"){
+      detail=(result.logs||[]).slice(-5).map(item=>{
+        if(typeof item==="string")return item;
+        return item.message||item.msg||item.text||JSON.stringify(item);
+      }).join("\n")||"暂无日志。";
+    }
+
+    showToolResult(
+      "Agent Router",
+      `选择工具：${d.selected_tool}\n选择原因：${d.reason}\n\n${detail}`
+    );
+  }catch(e){addMessage("ai","Agent Router 失败："+normalizeError(e),{error:true})}
+}
 async function evalRetrieval(){
   try{
     const d=await req("/eval/retrieval");
     showToolResult(
       "检索评估完成",
-      `Hit Rate：${formatPercent(d.hit_rate)}
+      `Cases：${d.total_cases??d.total??"--"}
+Hit Rate：${formatPercent(d.hit_rate)}
 Recall@1：${formatPercent(d.recall_at_1)}
 Recall@3：${formatPercent(d.recall_at_3)}
 Recall@5：${formatPercent(d.recall_at_5)}
-平均相似度：${formatNumber(d.average_similarity)}`
+平均相似度：${formatNumber(d.average_similarity)}
+Misses：${Array.isArray(d.misses)?d.misses.length:"--"}`
     );
   }catch(e){addMessage("ai","检索评估失败："+normalizeError(e),{error:true})}
 }

@@ -1,22 +1,162 @@
 [
   {
     "query": "什么是RAG",
-    "expected_keyword": "检索增强生成"
+    "expected_keyword": "检索增强生成",
+    "category": "rag_basics"
   },
   {
-    "query": "Agent有什么能力",
-    "expected_keyword": "工具调用"
+    "query": "Embedding在知识库里有什么作用",
+    "expected_keyword": "语义相似度",
+    "category": "rag_basics"
+  },
+  {
+    "query": "Chroma在项目中负责什么",
+    "expected_keyword": "向量数据库",
+    "category": "vector_database"
+  },
+  {
+    "query": "Agent和普通聊天机器人有什么区别",
+    "expected_keyword": "工具调用",
+    "category": "agent"
+  },
+  {
+    "query": "为什么RAG可以降低模型幻觉",
+    "expected_keyword": "降低胡编风险",
+    "category": "rag_quality"
   },
   {
     "query": "为什么需要Rerank",
-    "expected_keyword": "二次排序"
+    "expected_keyword": "二次排序",
+    "category": "retrieval_strategy"
   },
   {
-    "query": "FastAPI是什么",
-    "expected_keyword": "API服务"
+    "query": "FastAPI适合做什么",
+    "expected_keyword": "API服务",
+    "category": "backend"
   },
   {
-    "query": "Token是什么",
-    "expected_keyword": "基本单位"
+    "query": "POST请求一般用于什么场景",
+    "expected_keyword": "提交数据",
+    "category": "backend"
+  },
+  {
+    "query": "Context Window是什么意思",
+    "expected_keyword": "最大上下文长度",
+    "category": "llm"
+  },
+  {
+    "query": "Token在大模型API里是什么意思",
+    "expected_keyword": "基本单位",
+    "category": "llm"
+  },
+  {
+    "query": "JWT认证的数据流是什么",
+    "expected_keyword": "Authorization Bearer",
+    "category": "auth"
+  },
+  {
+    "query": "Pydantic在FastAPI项目里做什么",
+    "expected_keyword": "字段校验",
+    "category": "backend"
+  },
+  {
+    "query": "SQLite为什么适合本地演示",
+    "expected_keyword": "轻量级关系型数据库",
+    "category": "database"
+  },
+  {
+    "query": "Vercel前端访问Railway后端为什么会遇到跨域",
+    "expected_keyword": "Access-Control-Allow-Origin",
+    "category": "deployment"
+  },
+  {
+    "query": "Docker在部署中有什么用",
+    "expected_keyword": "打包成容器",
+    "category": "deployment"
+  },
+  {
+    "query": "Railway部署后端需要配置什么",
+    "expected_keyword": "环境变量",
+    "category": "deployment"
+  },
+  {
+    "query": "Vercel适合部署什么",
+    "expected_keyword": "前端部署平台",
+    "category": "deployment"
+  },
+  {
+    "query": "为什么不能把API Key放进前端",
+    "expected_keyword": "不能放进前端",
+    "category": "security"
+  },
+  {
+    "query": "GitHub Actions对项目有什么价值",
+    "expected_keyword": "CI自动化测试",
+    "category": "engineering"
+  },
+  {
+    "query": "pytest在这个项目里测试什么",
+    "expected_keyword": "FastAPI TestClient",
+    "category": "testing"
+  },
+  {
+    "query": "TestClient如何帮助接口测试",
+    "expected_keyword": "模拟HTTP请求",
+    "category": "testing"
+  },
+  {
+    "query": "Hit Rate是什么指标",
+    "expected_keyword": "命中预期答案关键词",
+    "category": "rag_evaluation"
+  },
+  {
+    "query": "Recall@K如何衡量召回",
+    "expected_keyword": "前K条检索结果",
+    "category": "rag_evaluation"
+  },
+  {
+    "query": "平均相似度有什么意义",
+    "expected_keyword": "整体相关性",
+    "category": "rag_evaluation"
+  },
+  {
+    "query": "什么是混合检索",
+    "expected_keyword": "BM25",
+    "category": "retrieval_strategy"
+  },
+  {
+    "query": "Reranker在RAG中做什么",
+    "expected_keyword": "重新排序",
+    "category": "retrieval_strategy"
+  },
+  {
+    "query": "Function Calling是什么",
+    "expected_keyword": "调用外部函数或工具",
+    "category": "agent"
+  },
+  {
+    "query": "LangGraph适合构建什么",
+    "expected_keyword": "有状态、多步骤Agent工作流",
+    "category": "agent"
+  },
+  {
+    "query": "日志系统为什么重要",
+    "expected_keyword": "线上问题排查",
+    "category": "observability"
+  },
+  {
+    "query": "低质量回答应该如何评分",
+    "expected_keyword": "0分",
+    "category": "scoring"
+  },
+  {
+    "query": "LLM没有返回合法JSON怎么办",
+    "expected_keyword": "默认字段填充",
+    "category": "llm_reliability"
+  },
+  {
+    "query": "Prompt版本管理有什么价值",
+    "expected_keyword": "迭代、回滚",
+    "category": "prompt_engineering"
   }
 ]

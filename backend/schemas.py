@@ -88,3 +88,26 @@ class SessionStepRequest(BaseModel):
         if not value:
             raise ValueError("Answer cannot be empty")
         return value
+
+
+class AgentToolRequest(BaseModel):
+    intent: str = Field(..., min_length=1, max_length=3000)
+    question: Optional[str] = Field(default=None, max_length=3000)
+    session_id: Optional[int] = None
+
+    @field_validator("intent")
+    @classmethod
+    def validate_intent(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Intent cannot be empty")
+        return value
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        value = value.strip()
+        return value or None
