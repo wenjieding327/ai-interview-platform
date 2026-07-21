@@ -20,12 +20,19 @@ https://selfless-rejoicing-production-4735.up.railway.app
 
 ## Railway Configuration
 
-Use the repository root as the Railway root directory. The root `Dockerfile` copies the backend app and starts FastAPI with Railway's `$PORT`.
+The project supports both common Railway layouts:
+
+- Repository root as Railway root directory: uses root `railway.json` and root `Dockerfile`.
+- `backend` as Railway root directory: uses `backend/railway.json` and `backend/Dockerfile`.
+
+Both Dockerfiles start FastAPI with Railway's `$PORT`.
 
 Required files:
 
 - `Dockerfile`
 - `railway.json`
+- `backend/Dockerfile`
+- `backend/railway.json`
 - `backend/requirements.txt`
 - `backend/main.py`
 
