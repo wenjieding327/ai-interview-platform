@@ -9,5 +9,7 @@ __pycache__/
 .ruff_cache/
 *-server-*.log
 backend/storage/*.log
+private_notes/
+assets/demo/frames_check/
 .venv/
 venv/

@@ -22,7 +22,7 @@ Vercel Frontend
 - Frontend: https://ai-interview-platform-taupe-chi.vercel.app
 - Backend health: https://selfless-rejoicing-production-4735.up.railway.app/health
 - API docs: https://selfless-rejoicing-production-4735.up.railway.app/docs
-- 2-minute demo video: [assets/demo/ai_interview_platform_2min_demo.mp4](assets/demo/ai_interview_platform_2min_demo.mp4)
+- Live demo recording: [assets/demo/live_demo_recording.webm](assets/demo/live_demo_recording.webm)
 
 Default backend URL used by the frontend:
 
@@ -263,11 +263,9 @@ The frontend is static HTML/CSS/JS and calls the Railway backend URL. The backen
 - Wrote pytest + FastAPI TestClient tests for auth, protected APIs, interview sessions, RAG, retrieval metrics, low-effort scoring, and the agent router.
 - Deployed the frontend to Vercel and backend to Railway with Docker, environment variables, CORS, health checks, and request logging.
 
-## Project Limits and Next Steps
+## Production Roadmap
 
-This is a strong resume-grade AI application project, not yet a production SaaS.
-
-Good next upgrades:
+Planned upgrades:
 
 - PostgreSQL + Alembic migrations
 - Playwright E2E tests
@@ -283,9 +281,5 @@ See also:
 - [Architecture](docs/ARCHITECTURE.md)
 - [Project brief](docs/PROJECT_BRIEF.md)
 - [Demo script](docs/DEMO_SCRIPT.md)
-- [2-minute demo video script](docs/DEMO_VIDEO_SCRIPT.md)
-- [Interview prep guide](docs/INTERVIEW_PREP.md)
-- [Commercial roadmap](docs/COMMERCIAL_ROADMAP.md)
-- [Open source strategy](docs/OPEN_SOURCE_STRATEGY.md)
 - [Deployment checklist](docs/DEPLOYMENT_CHECKLIST.md)
 - [Security policy](SECURITY.md)
