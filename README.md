@@ -1,4 +1,4 @@
-# AI Interview Training Platform
+﻿# AI Interview Training Platform
 
 An AI application project for interview training: **FastAPI + RAG + Stateful Agent + Tool Calling demo + structured evaluation + testing + cloud deployment**.
 
@@ -22,6 +22,7 @@ Vercel Frontend
 - Frontend: https://ai-interview-platform-taupe-chi.vercel.app
 - Backend health: https://selfless-rejoicing-production-4735.up.railway.app/health
 - API docs: https://selfless-rejoicing-production-4735.up.railway.app/docs
+- 2-minute demo video: [assets/demo/ai_interview_platform_2min_demo.mp4](assets/demo/ai_interview_platform_2min_demo.mp4)
 
 Default backend URL used by the frontend:
 
@@ -44,7 +45,7 @@ This project goes further:
 - RAG knowledge retrieval using Chroma and SentenceTransformer
 - Candidate reranking before context injection
 - Structured LLM evaluation with JSON fallback
-- Low-effort answer detection and zero-score guardrail
+- Added low-effort answer detection so `"我不知道"` or `"?"` scores 0 and advances to a new question.
 - Tool Calling style agent router for RAG, retrieval eval, weakness reports, and logs
 - Retrieval evaluation with Hit Rate, Recall@1, Recall@3, Recall@5, misses, and category summaries
 - API logging middleware for status code, path, duration, and errors
@@ -116,7 +117,7 @@ Example:
 
 ```json
 {
-  "intent": "请检查RAG检索评估，给我Recall@K和Hit Rate"
+  "intent": "请检查 RAG 检索评估，给我 Recall@K 和 Hit Rate"
 }
 ```
 
@@ -155,7 +156,7 @@ Returned metrics:
 - `misses`
 - `recommendations`
 
-This lets the project say more than “I used RAG”: it shows how RAG quality is measured.
+This lets the project say more than "I used RAG"; it shows how RAG quality is measured.
 
 ## Local Development
 
@@ -279,6 +280,12 @@ Good next upgrades:
 
 See also:
 
+- [Architecture](docs/ARCHITECTURE.md)
 - [Project brief](docs/PROJECT_BRIEF.md)
 - [Demo script](docs/DEMO_SCRIPT.md)
+- [2-minute demo video script](docs/DEMO_VIDEO_SCRIPT.md)
+- [Interview prep guide](docs/INTERVIEW_PREP.md)
+- [Commercial roadmap](docs/COMMERCIAL_ROADMAP.md)
+- [Open source strategy](docs/OPEN_SOURCE_STRATEGY.md)
 - [Deployment checklist](docs/DEPLOYMENT_CHECKLIST.md)
+- [Security policy](SECURITY.md)
