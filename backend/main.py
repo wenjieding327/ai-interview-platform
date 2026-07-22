@@ -1,14 +1,18 @@
 from datetime import datetime
 import time
 import os
+from pathlib import Path
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from alembic import command
+from alembic.config import Config
 
 import json
 from services_logging import read_logs, log_event
 
 from database import Base, engine, get_db
+from config import RUN_DB_MIGRATIONS
 from models import User, InterviewHistory, InterviewSession
 from schemas import (
     RegisterRequest,
@@ -41,6 +45,25 @@ from services_interview import (
 )
 from services_agent import available_agent_tools, select_agent_tool
 
+def run_db_migrations_if_enabled():
+    if not RUN_DB_MIGRATIONS:
+        return
+
+    alembic_ini = Path(__file__).with_name("alembic.ini")
+    if not alembic_ini.exists():
+        log_event("db_migration_skipped", {"reason": "alembic.ini not found"})
+        return
+
+    alembic_config = Config(str(alembic_ini))
+    alembic_config.set_main_option(
+        "script_location",
+        str(Path(__file__).with_name("alembic"))
+    )
+    command.upgrade(alembic_config, "head")
+    log_event("db_migration_completed", {"revision": "head"})
+
+
+run_db_migrations_if_enabled()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(

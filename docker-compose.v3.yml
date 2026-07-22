@@ -5,13 +5,29 @@ services:
       - "8000:8000"
     env_file:
       - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/ai_interview
     volumes:
       - ./backend/storage:/app/storage
       - ./backend/data:/app/data
+    depends_on:
+      - postgres
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
 
-# PostgreSQL can be added later. This V3 keeps SQLite default so it runs easily on Windows.
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ai_interview
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

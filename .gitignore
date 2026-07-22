@@ -11,5 +11,9 @@ __pycache__/
 backend/storage/*.log
 private_notes/
 assets/demo/frames_check/
+assets/demo/*_check.png
 .venv/
 venv/
+node_modules/
+test-results/
+playwright-report/

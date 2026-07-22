@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AI Interview Coach Pitch</title>
+<style>
+:root{
+  --bg:#071018;
+  --panel:#0f1826;
+  --panel2:#121f30;
+  --line:#26364b;
+  --text:#f4f8ff;
+  --muted:#9aa9bd;
+  --cyan:#4dd7df;
+  --blue:#7095ff;
+  --green:#7be0a9;
+  --warn:#ffd166;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 16% 10%,rgba(77,215,223,.18),transparent 28%),
+    radial-gradient(circle at 80% 0%,rgba(112,149,255,.16),transparent 30%),
+    linear-gradient(180deg,#071018,#0a0f19 48%,#070b12);
+}
+a{color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 22px 64px}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:54px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800}
+.logo{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--blue));color:#071018}
+.navlinks{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:#10192a;text-decoration:none;font-weight:750}
+.btn.primary{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#06101b;border:0}
+.hero{display:grid;grid-template-columns:1.03fr .97fr;gap:34px;align-items:center;margin-bottom:48px}
+.eyebrow{color:var(--cyan);font-weight:800;margin-bottom:12px}
+h1{font-size:54px;line-height:1.06;margin:0 0 18px;letter-spacing:0}
+.lead{font-size:19px;line-height:1.75;color:#dbe7f7;margin:0 0 24px}
+.proof{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}
+.proof div,.card{border:1px solid var(--line);background:rgba(15,24,38,.82);border-radius:8px}
+.proof div{padding:16px}
+.proof b{display:block;font-size:26px;margin-bottom:6px}
+.proof span{color:var(--muted);font-size:13px}
+.demo{padding:14px;background:#0d1523;border:1px solid var(--line);border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.35)}
+video{width:100%;display:block;border-radius:6px;background:#050913}
+.section{margin-top:42px}
+.section h2{font-size:30px;margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{padding:20px;min-height:170px}
+.card h3{margin:0 0 10px;font-size:18px}
+.card p,.card li{color:#c7d4e7;line-height:1.65}
+ul{padding-left:18px;margin:8px 0 0}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.weak{border-color:#4b3140}.strong{border-color:#276052}
+.tag{display:inline-block;margin-bottom:10px;color:#06101b;background:var(--warn);padding:4px 9px;border-radius:999px;font-weight:800;font-size:12px}
+.tag.good{background:var(--green)}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.step{padding:18px;border-left:3px solid var(--cyan);background:#0f1826;border-radius:8px}
+.step b{display:block;margin-bottom:8px}
+.footer{margin-top:54px;padding-top:22px;border-top:1px solid var(--line);color:var(--muted);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+@media(max-width:880px){
+  .hero,.grid,.compare,.timeline,.proof{grid-template-columns:1fr}
+  h1{font-size:40px}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <nav class="nav">
+    <div class="brand"><div class="logo">AI</div><span>AI Interview Coach</span></div>
+    <div class="navlinks">
+      <a class="btn" href="./index.html">Open App</a>
+      <a class="btn primary" href="https://github.com/wenjieding327/ai-interview-platform">GitHub</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Agentic Interview Training Platform</div>
+      <h1>面向 AI 应用开发岗位的工程化面试训练产品</h1>
+      <p class="lead">它不是把一个聊天框套在大模型外面，而是把登录鉴权、多轮会话、RAG 检索、结构化评分、Agent 工具路由、检索评估、日志和云端部署串成了一个完整业务闭环。</p>
+      <div class="navlinks">
+        <a class="btn primary" href="./index.html">Try Live Demo</a>
+        <a class="btn" href="https://github.com/wenjieding327/ai-interview-platform/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+      </div>
+      <div class="proof">
+        <div><b>32</b><span>RAG eval cases</span></div>
+        <div><b>8</b><span>backend API tests</span></div>
+        <div><b>4</b><span>agent tools</span></div>
+      </div>
+    </div>
+    <div class="demo">
+      <video src="./assets/demo/live_demo_recording.webm" controls muted playsinline></video>
+    </div>
+  </section>
+
+  <section class="section compare">
+    <div class="card weak">
+      <span class="tag">普通 AI 套壳</span>
+      <h3>只证明“能调模型”</h3>
+      <ul>
+        <li>一个输入框加一个模型回答</li>
+        <li>没有会话状态和用户隔离</li>
+        <li>没有检索质量评估</li>
+        <li>没有测试、部署、日志证据</li>
+      </ul>
+    </div>
+    <div class="card strong">
+      <span class="tag good">这个项目</span>
+      <h3>证明“能把 AI 落地成产品”</h3>
+      <ul>
+        <li>JWT + FastAPI + session memory</li>
+        <li>RAG + Chroma + Recall@K / Hit Rate</li>
+        <li>Agent Router 选择后端工具</li>
+        <li>pytest、E2E、Docker、Railway、Vercel</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Core Technical Highlights</h2>
+    <div class="grid">
+      <div class="card"><h3>Stateful Interview Agent</h3><p>后端维护 session、current question 和 turns，避免每轮面试都变成无记忆的一次性聊天。</p></div>
+      <div class="card"><h3>RAG With Evaluation</h3><p>不仅使用向量检索，还通过 Hit Rate、Recall@1/3/5、misses 和 category summary 衡量召回质量。</p></div>
+      <div class="card"><h3>Tool Router</h3><p>根据用户意图选择 Ask RAG、Retrieval Eval、Weakness Report 或 Logs，形成可测试的 Agent 工具调用闭环。</p></div>
+      <div class="card"><h3>Structured Scoring</h3><p>解析 LLM evaluation JSON，把分数、优点、弱点和建议渲染成可读评分卡，而不是把原始 JSON 扔给用户。</p></div>
+      <div class="card"><h3>Product-Grade Data Path</h3><p>本地默认 SQLite，生产支持 PostgreSQL，并通过 Alembic 管理 schema migrations。</p></div>
+      <div class="card"><h3>Engineering Evidence</h3><p>后端 pytest、Playwright E2E、GitHub Actions、Docker、Railway/Vercel 部署和日志排障文档共同构成工程证据。</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Demo Story</h2>
+    <div class="timeline">
+      <div class="step"><b>1. Auth</b>注册/登录并拿到 JWT。</div>
+      <div class="step"><b>2. Interview</b>选择岗位，创建多轮面试 session。</div>
+      <div class="step"><b>3. Evaluation</b>回答后生成结构化评分和下一问。</div>
+      <div class="step"><b>4. Agent Tools</b>运行 Retrieval Eval，展示 Recall@K 和 Hit Rate。</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>Built for AI application developer interviews, hackathons, and portfolio review.</span>
+    <span>FastAPI · RAG · Agent · PostgreSQL · Alembic · Playwright</span>
+  </footer>
+</main>
+</body>
+</html>

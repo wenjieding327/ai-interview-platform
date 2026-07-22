@@ -7,6 +7,7 @@ flowchart LR
     User["Candidate / Recruiter"] --> Frontend["Static Frontend<br/>HTML CSS JS on Vercel"]
     Frontend --> API["FastAPI Backend<br/>Railway"]
     API --> Auth["JWT Auth<br/>User Isolation"]
+    API --> Data["SQLAlchemy Data Layer<br/>SQLite local / PostgreSQL prod"]
     API --> Interview["Stateful Interview Agent<br/>Session + Turns"]
     API --> RAG["RAG Service<br/>Embedding + Chroma + Rerank"]
     API --> Router["Agent Tool Router"]
@@ -28,7 +29,7 @@ sequenceDiagram
     participant B as FastAPI
     participant R as RAG
     participant L as LLM
-    participant DB as SQLite
+    participant DB as SQLite / PostgreSQL
 
     U->>F: Login and choose target role
     F->>B: POST /auth/login
@@ -51,4 +52,4 @@ sequenceDiagram
 - It stores interview state and historical turns.
 - It measures retrieval quality instead of only claiming to use RAG.
 - It includes a deterministic tool router that can be tested without model randomness.
-- It has deployment, logging, tests, and fallback behavior.
+- It has migrations, deployment, logging, tests, E2E coverage, and fallback behavior.

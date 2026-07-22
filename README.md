@@ -23,6 +23,7 @@ Vercel Frontend
 - Backend health: https://selfless-rejoicing-production-4735.up.railway.app/health
 - API docs: https://selfless-rejoicing-production-4735.up.railway.app/docs
 - Live demo recording: [assets/demo/live_demo_recording.webm](assets/demo/live_demo_recording.webm)
+- Competition pitch page: https://ai-interview-platform-taupe-chi.vercel.app/pitch.html
 
 Default backend URL used by the frontend:
 
@@ -50,8 +51,12 @@ This project goes further:
 - Retrieval evaluation with Hit Rate, Recall@1, Recall@3, Recall@5, misses, and category summaries
 - API logging middleware for status code, path, duration, and errors
 - pytest + FastAPI TestClient coverage
+- Playwright E2E coverage for the real browser flow
+- PostgreSQL-ready data layer with Alembic migrations
 - GitHub Actions CI
 - Vercel frontend + Railway backend deployment
+
+In other words, this project is stronger than a typical AI wrapper because it demonstrates the full application lifecycle: product UI, backend contracts, authenticated state, retrieval quality measurement, agent tool routing, migrations, automated tests, deployment, and debugging evidence.
 
 ## Core Features
 
@@ -64,7 +69,7 @@ This project goes further:
 | Evaluation | Hit Rate, Recall@K, average similarity, category summary, misses |
 | Reliability | LLM JSON fallback, low-effort answer scoring, Railway startup fallback |
 | Observability | Local JSONL logs and `/admin/logs` endpoint |
-| Engineering | pytest, boundary tests, GitHub Actions CI, Docker/Railway config |
+| Engineering | pytest, Playwright E2E, Alembic migrations, GitHub Actions CI, Docker/Railway config |
 | Frontend | Professional dark UI, scoring cards, next-question cards, right-side console |
 
 ## Main User Flow
@@ -210,6 +215,34 @@ The tests use fake LLM and fake embeddings to avoid network, cost, and randomnes
 - retrieval evaluation metrics
 - agent tool router
 
+### End-to-End Browser Test
+
+```powershell
+npm install
+npx playwright install chromium
+npm run e2e
+```
+
+The E2E test opens the deployed frontend, registers a fresh test user, logs in, starts an interview, submits an answer, runs Agent Router, and verifies Retrieval Eval output.
+
+## Database Migrations
+
+Local demos still work with SQLite by default. Production deployments can use PostgreSQL by setting:
+
+```text
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:PORT/DB_NAME
+RUN_DB_MIGRATIONS=true
+```
+
+Run migrations:
+
+```powershell
+cd backend
+alembic upgrade head
+```
+
+Docker/Railway startup runs `alembic upgrade head` before `uvicorn`. The FastAPI startup path can also run migrations for PostgreSQL deployments, so the app is not locked to a single Railway build strategy.
+
 ## Deployment Notes
 
 ### Railway Backend
@@ -231,6 +264,8 @@ LOG_PATH
 USE_FAKE_LLM
 USE_FAKE_EMBEDDINGS
 ```
+
+For a production-grade data layer, set `DATABASE_URL` to PostgreSQL. Without it, the app falls back to SQLite for local and free-tier demos.
 
 The Dockerfile uses:
 
@@ -281,5 +316,6 @@ See also:
 - [Architecture](docs/ARCHITECTURE.md)
 - [Project brief](docs/PROJECT_BRIEF.md)
 - [Demo script](docs/DEMO_SCRIPT.md)
+- [Pitch page](frontend/pitch.html)
 - [Deployment checklist](docs/DEPLOYMENT_CHECKLIST.md)
 - [Security policy](SECURITY.md)

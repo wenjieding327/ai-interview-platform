@@ -4,7 +4,7 @@ This project is designed to run as a split deployment:
 
 - Frontend: Vercel static site
 - Backend: Railway FastAPI service
-- Database: SQLite inside the Railway service runtime
+- Database: SQLite by default, PostgreSQL for production-grade deployments
 - RAG data: `backend/data/interview_qa.txt` and `backend/data/eval_cases.json`
 
 ## Expected Production URLs
@@ -47,6 +47,15 @@ USE_FAKE_EMBEDDINGS=true
 
 Use `USE_FAKE_EMBEDDINGS=true` on the hosted demo if you want stable, free retrieval behavior without downloading local embedding models during deployment.
 
+For PostgreSQL, provision a Railway Postgres database and set:
+
+```text
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:PORT/DB_NAME
+RUN_DB_MIGRATIONS=true
+```
+
+The Docker command runs `alembic upgrade head` before starting FastAPI. If Railway uses Railpack instead of Docker, the FastAPI startup hook also runs migrations when `RUN_DB_MIGRATIONS=true` or when a non-SQLite `DATABASE_URL` is used.
+
 ## Smoke Tests
 
 After each deploy, verify these endpoints:
@@ -79,6 +88,12 @@ A 404 from `/health` usually means the custom domain is not serving this FastAPI
 
 The frontend is a static HTML/CSS/JS app. Vercel should serve `frontend/index.html`.
 
+The competition pitch page is:
+
+```text
+https://ai-interview-platform-taupe-chi.vercel.app/pitch.html
+```
+
 Smoke test:
 
 ```powershell
@@ -95,5 +110,7 @@ Use this evidence in the resume/project interview:
 
 - CI runs static safety checks, compile checks, and backend tests on every push and pull request.
 - Tests cover auth, JWT, interview sessions, RAG, retrieval evaluation, and agent tool routing.
+- Playwright E2E covers the deployed browser flow: register, login, start interview, answer, Agent Router, and Retrieval Eval.
+- Alembic migrations make the backend ready for PostgreSQL instead of being locked to SQLite.
 - Deployment docs explain frontend/backend separation and production smoke testing.
 - The app includes fallback behavior for low-quality answers, unstable LLM JSON, and auth failures.

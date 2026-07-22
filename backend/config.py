@@ -9,6 +9,11 @@ JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./storage/app.db")
+IS_SQLITE_DATABASE = DATABASE_URL.startswith("sqlite")
+RUN_DB_MIGRATIONS = os.getenv(
+    "RUN_DB_MIGRATIONS",
+    "false" if IS_SQLITE_DATABASE else "true"
+).lower() == "true"
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./storage/chroma_db")
 DATA_PATH = os.getenv("DATA_PATH", "./data/interview_qa.txt")
 LOG_PATH = os.getenv("LOG_PATH", "./storage/app_events.jsonl")
