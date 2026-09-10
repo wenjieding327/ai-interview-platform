@@ -1,20 +1,32 @@
 from fastapi import HTTPException
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, USE_FAKE_LLM
+from config import DEEPSEEK_API_KEY, USE_FAKE_LLM, LLM_TIMEOUT_SECONDS
+import time
 from services_cache import make_key, get_cache, set_cache
 from services_logging import log_event
 
 llm_client = None
+last_failure = None
+
+
+def llm_status():
+    if USE_FAKE_LLM:
+        return "test"
+    if not DEEPSEEK_API_KEY:
+        return "unconfigured"
+    return last_failure or "configured"
 
 if DEEPSEEK_API_KEY:
     llm_client = OpenAI(
         api_key=DEEPSEEK_API_KEY,
-        base_url="https://api.deepseek.com"
+        base_url="https://api.deepseek.com",
+        timeout=LLM_TIMEOUT_SECONDS,
+        max_retries=0
     )
 
 
 def fake_llm_response(system_prompt: str, user_prompt: str) -> str:
-    prompt = f"{system_prompt}\n{user_prompt}"
+    prompt = system_prompt
 
     if "score" in prompt.lower() or "评分" in prompt:
         return """
@@ -41,9 +53,9 @@ def fake_llm_response(system_prompt: str, user_prompt: str) -> str:
 
 
 def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.3, use_cache: bool = True) -> str:
+    global last_failure
     if USE_FAKE_LLM:
         log_event("llm_fake_response", {
-            "user_prompt_preview": user_prompt[:200],
             "temperature": temperature
         })
         return fake_llm_response(system_prompt, user_prompt)
@@ -68,9 +80,9 @@ def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.3, use
             log_event("llm_cache_hit", {"key": cache_key})
             return cached
 
+    started = time.perf_counter()
     try:
         log_event("llm_call_start", {
-            "user_prompt_preview": user_prompt[:200],
             "temperature": temperature
         })
 
@@ -84,19 +96,24 @@ def call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.3, use
         )
 
         content = response.choices[0].message.content
+        if not content or not content.strip():
+            raise ValueError("Empty model response")
+        last_failure = None
 
         if use_cache:
             set_cache(cache_key, content)
 
         log_event("llm_call_success", {
-            "response_preview": content[:200]
+            "duration_ms": round((time.perf_counter() - started) * 1000, 2)
         })
 
         return content
 
     except Exception as e:
-        log_event("llm_call_failed", {"error": str(e)})
+        last_failure = "insufficient_balance" if getattr(e, "status_code", None) == 402 else "unavailable"
+        log_event("llm_call_failed", {"error_type": type(e).__name__,
+                                      "duration_ms": round((time.perf_counter() - started) * 1000, 2)})
         raise HTTPException(
-            status_code=500,
-            detail=f"LLM call failed: {str(e)}"
+            status_code=503,
+            detail="AI 服务暂时不可用，请稍后重试。"
         )

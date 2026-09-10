@@ -46,3 +46,11 @@ class InterviewSession(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class KnowledgeDocument(Base):
+    __tablename__ = "knowledge_documents"
+
+    id = Column(String(64), primary_key=True)
+    owner = Column(String(32), nullable=False, index=True)
+    content = Column(Text, nullable=False)

@@ -2,16 +2,30 @@
 
 An AI application project for interview training: **FastAPI + RAG + Stateful Agent + Tool Calling demo + structured evaluation + testing + cloud deployment**.
 
+## Runtime And Reliability
+
+The hosted demo uses persistent SQLite storage and real BM25 keyword retrieval to fit a small Railway instance. Optional Chroma + SentenceTransformer vector retrieval and PostgreSQL are supported separately; they are not claims about the currently hosted demo.
+
+- Browser requests use a same-origin `/api` proxy on Vercel. Overseas hosting may still be unreliable on mainland China networks.
+- Six-question sessions finish automatically. Explicit non-answers receive a rule-based zero; unavailable model evaluations remain **ungraded**, not a fabricated score.
+- When the LLM is unavailable, the UI explicitly labels question-bank practice and saves real answers.
+- Reports aggregate saved scores on a 0-100 scale. Missing scores are excluded from the mean.
+- Request IDs and optimistic concurrency protect retries and simultaneous submissions.
+- Re-login restores saved sessions and the current tab's draft. Passwords and JWTs are not persisted in browser storage.
+- Uploaded knowledge is scoped to its owner. Only `ADMIN_EMAILS` can read system logs.
+- CI includes backend tests, a PostgreSQL lane, and local Playwright tests without live LLM credits.
+
+See [Operations](docs/OPERATIONS.md) for deployment, recovery, retrieval modes, and limitations.
+
 This is not just a chat UI. It is a full AI application workflow:
 
 ```text
 Vercel Frontend
   -> Railway FastAPI Backend
   -> JWT Auth
-  -> SQLite User / Session / History
-  -> Chroma Vector DB
-  -> SentenceTransformer Embeddings
-  -> RAG Retrieval + Rerank
+  -> Persistent SQLite or PostgreSQL User / Session / History / Knowledge
+  -> BM25 retrieval or optional Chroma + SentenceTransformer
+  -> RAG Retrieval (vector mode includes keyword reranking)
   -> Interview Agent Scoring + Follow-up
   -> Tool Router Agent
   -> Retrieval Evaluation + Logs + Weakness Report
@@ -43,8 +57,8 @@ This project goes further:
 
 - JWT registration/login and protected APIs
 - Stateful interview sessions with `current_question` and historical `turns`
-- RAG knowledge retrieval using Chroma and SentenceTransformer
-- Candidate reranking before context injection
+- RAG knowledge retrieval using BM25, with optional Chroma and SentenceTransformer
+- Keyword-based candidate reranking in vector mode before context injection
 - Structured LLM evaluation with JSON fallback
 - Added low-effort answer detection so `"我不知道"` or `"?"` scores 0 and advances to a new question.
 - Tool Calling style agent router for RAG, retrieval eval, weakness reports, and logs
@@ -102,7 +116,8 @@ In other words, this project is stronger than a typical AI wrapper because it de
 | `POST /knowledge/upload` | Upload `.txt` knowledge base lines | Yes |
 | `GET /eval/retrieval` | Run retrieval evaluation set | Yes |
 | `GET /report/weakness` | Generate weakness report from history | Yes |
-| `GET /admin/logs` | Read recent logs | Yes |
+| `GET /admin/logs` | Read recent logs | Administrator |
+| `GET /interview/sessions` | List own recent sessions | Yes |
 | `GET /agent/tools` | List available agent tools | Yes |
 | `POST /agent/tool-call` | Route user intent to a backend tool | Yes |
 
@@ -150,13 +165,13 @@ backend/data/eval_cases.json
 
 It covers RAG, embeddings, vector DB, auth, deployment, testing, observability, Function Calling, and prompt engineering.
 
-Returned metrics:
+Returned compatibility metrics (the `recall_at_*` fields measure keyword hit-at-K, not recall over an exhaustively labeled relevance set):
 
 - `hit_rate`
 - `recall_at_1`
 - `recall_at_3`
 - `recall_at_5`
-- `average_similarity`
+- `average_similarity` (vector mode only; null for BM25)
 - `category_summary`
 - `misses`
 - `recommendations`

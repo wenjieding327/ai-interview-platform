@@ -2,34 +2,22 @@ import os
 import hashlib
 from typing import Dict, Any, List
 
-import chromadb
+import re
+import threading
+import time
+from rank_bm25 import BM25Okapi
+from sqlalchemy.exc import IntegrityError
 
-from config import CHROMA_PATH, DATA_PATH, USE_FAKE_EMBEDDINGS
+from config import CHROMA_PATH, DATA_PATH, RETRIEVAL_MODE
+from database import SessionLocal
+from models import KnowledgeDocument
 from services_logging import log_event
-
-
-class FakeEmbeddingModel:
-    def encode(self, text: str) -> List[float]:
-        digest = hashlib.sha256(text.encode("utf-8")).digest()
-        return [byte / 255 for byte in digest]
 
 
 embedding_model = None
 knowledge_initialized = False
-
-chroma_client = chromadb.PersistentClient(
-    path=CHROMA_PATH
-)
-
-COLLECTION_NAME = (
-    "interview_knowledge_fake"
-    if USE_FAKE_EMBEDDINGS
-    else "interview_knowledge"
-)
-
-collection = chroma_client.get_or_create_collection(
-    name=COLLECTION_NAME
-)
+collection = None
+index_lock = threading.RLock()
 
 
 def get_embedding_model():
@@ -38,23 +26,9 @@ def get_embedding_model():
     if embedding_model is not None:
         return embedding_model
 
-    if USE_FAKE_EMBEDDINGS:
-        log_event("embedding_fake_model_enabled", {})
-        embedding_model = FakeEmbeddingModel()
-        return embedding_model
-
-    try:
-        from sentence_transformers import SentenceTransformer
-
-        embedding_model = SentenceTransformer(
-            "sentence-transformers/all-MiniLM-L6-v2"
-        )
-        return embedding_model
-
-    except Exception as exc:
-        log_event("embedding_model_fallback", {"error": str(exc)})
-        embedding_model = FakeEmbeddingModel()
-        return embedding_model
+    from sentence_transformers import SentenceTransformer
+    embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    return embedding_model
 
 
 def encode_text(text: str) -> List[float]:
@@ -86,29 +60,38 @@ def init_knowledge_base() -> None:
     if knowledge_initialized:
         return
 
-    if collection.count() > 0:
-        knowledge_initialized = True
-        return
-
-    documents = load_seed_documents()
-
-    for doc in documents:
-        add_knowledge_text(doc)
-
-    knowledge_initialized = True
+    with index_lock:
+        if not knowledge_initialized:
+            for doc in load_seed_documents():
+                add_knowledge_text(doc)
+            knowledge_initialized = True
 
 
-def add_knowledge_text(text: str) -> str:
-    doc_id = str(collection.count() + 1)
-    vector = encode_text(text)
-
-    collection.add(
-        ids=[doc_id],
-        documents=[text],
-        embeddings=[vector]
-    )
-
+def add_knowledge_text(text: str, user_id: int | None = None) -> str:
+    owner = "seed" if user_id is None else str(user_id)
+    doc_id = hashlib.sha256(f"{owner}:{text}".encode("utf-8")).hexdigest()
+    with SessionLocal() as db:
+        if db.get(KnowledgeDocument, doc_id) is None:
+            db.add(KnowledgeDocument(id=doc_id, owner=owner, content=text))
+            try:
+                db.commit()
+            except IntegrityError:
+                db.rollback()
     return doc_id
+
+
+def knowledge_count(user_id: int | None = None) -> int:
+    with SessionLocal() as db:
+        owners = ["seed"] + ([str(user_id)] if user_id is not None else [])
+        return db.query(KnowledgeDocument).filter(KnowledgeDocument.owner.in_(owners)).count()
+
+
+def tokenize(text: str) -> List[str]:
+    # Chinese bigrams plus Latin terms work without downloading an embedding model.
+    tokens = re.findall(r"[a-z0-9_]+|[\u4e00-\u9fff]", text.lower())
+    for chunk in re.findall(r"[\u4e00-\u9fff]+", text):
+        tokens.extend(chunk[i:i + 2] for i in range(len(chunk) - 1))
+    return tokens or [""]
 
 
 def keyword_rerank(query: str, docs: List[str], distances: List[float]) -> List[Dict[str, Any]]:
@@ -143,7 +126,7 @@ def keyword_rerank(query: str, docs: List[str], distances: List[float]) -> List[
     return ranked
 
 
-def retrieve_context(query: str, top_k: int = 5, candidate_k: int = 15) -> Dict[str, Any]:
+def retrieve_context(query: str, top_k: int = 5, candidate_k: int = 15, user_id: int | None = None) -> Dict[str, Any]:
     """
     V3 RAG:
     query
@@ -156,11 +139,12 @@ def retrieve_context(query: str, top_k: int = 5, candidate_k: int = 15) -> Dict[
     ↓
     Top top_k 拼接context
     """
+    started = time.perf_counter()
     init_knowledge_base()
-    query_vector = encode_text(query)
-
-    total_count = collection.count()
-    if total_count == 0:
+    owners = ["seed"] + ([str(user_id)] if user_id is not None else [])
+    with SessionLocal() as db:
+        documents = db.query(KnowledgeDocument).filter(KnowledgeDocument.owner.in_(owners)).all()
+    if not documents:
         return {
             "ids": [],
             "raw_docs": [],
@@ -171,21 +155,41 @@ def retrieve_context(query: str, top_k: int = 5, candidate_k: int = 15) -> Dict[
             "best_distance": None
         }
 
-    real_candidate_k = min(candidate_k, total_count)
-
-    results = collection.query(
-        query_embeddings=[query_vector],
-        n_results=real_candidate_k
-    )
-
-    docs = results.get("documents", [[]])[0]
-    distances = results.get("distances", [[]])[0]
-    ids = results.get("ids", [[]])[0]
-
-    ranked = keyword_rerank(query, docs, distances)
+    mode = RETRIEVAL_MODE
+    if mode == "vector":
+        global collection
+        import chromadb
+        with index_lock:
+            if collection is None:
+                collection = chromadb.PersistentClient(path=CHROMA_PATH).get_or_create_collection(
+                    name="interview_knowledge_scoped_v1"
+                )
+            existing = set(collection.get(ids=[doc.id for doc in documents])["ids"])
+            for doc in documents:
+                if doc.id not in existing:
+                    collection.upsert(ids=[doc.id], documents=[doc.content],
+                                      embeddings=[encode_text(doc.content)], metadatas=[{"owner": doc.owner}])
+            result = collection.query(query_embeddings=[encode_text(query)],
+                                      n_results=min(candidate_k, len(documents)),
+                                      where={"owner": {"$in": owners}})
+        ids = result["ids"][0]
+        docs = result["documents"][0]
+        distances = result["distances"][0]
+        ranked = keyword_rerank(query, docs, distances)
+    else:
+        scores = BM25Okapi([tokenize(doc.content) for doc in documents]).get_scores(tokenize(query))
+        candidates = sorted(zip(documents, scores), key=lambda item: (-item[1], item[0].id))[:candidate_k]
+        ranked = [{"doc": doc.content, "id": doc.id, "distance": None,
+                   "rerank_score": float(score), "bm25_score": float(score)}
+                  for doc, score in candidates if score > 0]
+        ids = [item["id"] for item in ranked]
+        docs = [item["doc"] for item in ranked]
+        distances = []
 
     top_docs = [item["doc"] for item in ranked[:top_k]]
     context = "\n".join(top_docs)
+    log_event("rag_retrieval", {"mode": mode, "duration_ms": round((time.perf_counter() - started) * 1000, 2),
+                                "result_count": len(top_docs)})
 
     return {
         "ids": ids,
@@ -194,7 +198,8 @@ def retrieve_context(query: str, top_k: int = 5, candidate_k: int = 15) -> Dict[
         "docs": top_docs,
         "distances": distances,
         "context": context,
-        "best_distance": distances[0] if distances else None
+        "best_distance": distances[0] if distances else None,
+        "retrieval_mode": mode
     }
 
 
@@ -304,7 +309,7 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
     recall_at_5 = recall_hits[5] / len(test_cases)
     average_similarity = (
         sum(similarity_scores) / len(similarity_scores)
-        if similarity_scores else 0
+        if similarity_scores else None
     )
 
     return {
@@ -316,6 +321,8 @@ def evaluate_retrieval(test_cases: List[Dict[str, str]]) -> Dict[str, Any]:
         "recall_at_3": recall_at_3,
         "recall_at_5": recall_at_5,
         "average_similarity": average_similarity,
+        "retrieval_mode": RETRIEVAL_MODE,
+        "metric_note": "Recall@K fields are keyword-hit proxies, not multi-document recall. BM25 scores are not vector similarity.",
         "category_summary": category_summary,
         "misses": misses,
         "recommendations": [

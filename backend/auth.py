@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -56,7 +55,7 @@ def get_current_user(
 
         user_id = payload.get("sub")
 
-        if user_id is None:
+        if not isinstance(user_id, str) or not user_id.isdecimal():
             raise credentials_exception
 
     except JWTError:

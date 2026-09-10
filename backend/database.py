@@ -1,8 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from config import DATABASE_URL
+from pathlib import Path
+from sqlalchemy.engine import make_url
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+database_url = make_url(DATABASE_URL)
+if database_url.get_backend_name() == "sqlite" and database_url.database not in (None, "", ":memory:"):
+    Path(database_url.database).expanduser().parent.mkdir(parents=True, exist_ok=True)
+
+connect_args = {"check_same_thread": False, "timeout": 30} if DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(
     DATABASE_URL,

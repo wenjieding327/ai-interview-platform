@@ -1,0 +1,6 @@
+.env
+storage
+.test_storage
+__pycache__
+.pytest_cache
+tests

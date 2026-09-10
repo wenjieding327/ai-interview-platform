@@ -1,6 +1,9 @@
 from typing import Dict, Any, List
 import json
 import re
+import math
+from difflib import SequenceMatcher
+from fastapi import HTTPException
 
 from services_llm import call_llm
 from services_rag import retrieve_context
@@ -30,8 +33,8 @@ NEXT_QUESTION_BANK = [
 ]
 
 
-def answer_with_rag(question: str) -> Dict[str, Any]:
-    retrieved = retrieve_context(question, top_k=5, candidate_k=15)
+def answer_with_rag(question: str, user_id: int | None = None) -> Dict[str, Any]:
+    retrieved = retrieve_context(question, top_k=5, candidate_k=15, user_id=user_id)
 
     context = retrieved["context"]
 
@@ -51,30 +54,32 @@ def answer_with_rag(question: str) -> Dict[str, Any]:
 {context}
 """
 
-    answer = call_llm(
-        system_prompt=system_prompt,
-        user_prompt=question,
-        temperature=0.2
-    )
+    warning = None
+    try:
+        answer = call_llm(system_prompt=system_prompt, user_prompt=question, temperature=0.2)
+    except HTTPException:
+        warning = "practice_mode"
+        answer = "AI 服务暂不可用，以下是检索到的知识库原文摘录：\n\n" + context
 
     return {
         "question": question,
         "answer": answer,
+        "warning": warning,
         "retrieved_context": context,
         "ranked_docs": retrieved["ranked_docs"],
         "prompt_version": PROMPT_VERSION
     }
 
 
-def generate_first_question(target_role: str) -> Dict[str, Any]:
+def generate_first_question(target_role: str, user_id: int | None = None) -> Dict[str, Any]:
     query = f"{target_role} 面试 核心知识点"
-    retrieved = retrieve_context(query, top_k=5, candidate_k=15)
+    retrieved = retrieve_context(query, top_k=5, candidate_k=15, user_id=user_id)
     context = retrieved["context"]
 
     system_prompt = f"""
 你是严格的AI应用开发技术面试官。
 
-请根据目标岗位和资料生成一道适合实习生的面试题。
+请根据目标岗位和资料生成一道难度与岗位相符的面试题。
 
 目标岗位：
 {target_role}
@@ -89,17 +94,19 @@ def generate_first_question(target_role: str) -> Dict[str, Any]:
 4. 不要给答案
 """
 
-    question = call_llm(
-        system_prompt=system_prompt,
-        user_prompt="请生成第一道面试题。",
-        temperature=0.4
-    )
+    warning = None
+    try:
+        question = call_llm(system_prompt=system_prompt, user_prompt="请生成第一道面试题。", temperature=0.4)
+    except HTTPException:
+        warning = "practice_mode"
+        question = NEXT_QUESTION_BANK[0]
 
     return {
         "target_role": target_role,
         "retrieved_context": context,
         "ranked_docs": retrieved["ranked_docs"],
         "first_question": question,
+        "warning": warning,
         "prompt_version": PROMPT_VERSION
     }
 
@@ -143,8 +150,8 @@ def low_effort_evaluation() -> str:
 
 
 def next_question_after_low_effort(target_role: str, turns: List[Dict[str, Any]]) -> str:
-    index = len(turns) % len(NEXT_QUESTION_BANK)
-    question = NEXT_QUESTION_BANK[index]
+    asked = [turn.get("question", "") for turn in turns]
+    question = next((q for q in NEXT_QUESTION_BANK if not any(q in old for old in asked)), NEXT_QUESTION_BANK[-1])
 
     if target_role:
         return f"{question}\n\n请尽量结合“{target_role}”这个岗位来回答。"
@@ -193,9 +200,10 @@ def normalize_evaluation(evaluation: str) -> str:
     parsed = None
 
     try:
-        parsed = json.loads(evaluation)
+        parsed = evaluation if isinstance(evaluation, dict) else json.loads(evaluation)
 
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, TypeError):
+        evaluation = str(evaluation or "")
         start = evaluation.find("{")
         end = evaluation.rfind("}")
 
@@ -207,12 +215,13 @@ def normalize_evaluation(evaluation: str) -> str:
 
     if not isinstance(parsed, dict):
         log_event("evaluation_parse_fallback", {
-            "raw_preview": evaluation[:300]
+            "format": "non_json"
         })
         parsed = {
             **required_defaults,
             "weaknesses": ["LLM 评分格式不稳定，已触发兜底解析。"],
-            "suggestion": evaluation.strip() or required_defaults["suggestion"]
+            "suggestion": ("本轮评分暂不可用，请结合原始回答复盘。" if "{" in evaluation
+                           else evaluation.strip()) or required_defaults["suggestion"]
         }
 
     normalized = {
@@ -223,7 +232,7 @@ def normalize_evaluation(evaluation: str) -> str:
     try:
         if normalized["score"] is not None:
             score = float(normalized["score"])
-            normalized["score"] = max(0, min(100, round(score)))
+            normalized["score"] = max(0, min(100, round(score))) if math.isfinite(score) else None
 
     except (TypeError, ValueError):
         normalized["score"] = None
@@ -233,7 +242,7 @@ def normalize_evaluation(evaluation: str) -> str:
         if isinstance(value, str):
             normalized[key] = [value]
         elif not isinstance(value, list):
-            normalized[key] = [str(value)]
+            normalized[key] = []
 
     return json.dumps(normalized, ensure_ascii=False)
 
@@ -284,7 +293,7 @@ def run_interview_step(
 
     if is_low_effort_answer(answer):
         evaluation = low_effort_evaluation()
-        followup_question = next_question_after_low_effort(target_role, turns)
+        followup_question = next_question_after_low_effort(target_role, turns + [{"question": question}])
 
         return {
             "target_role": target_role,
@@ -295,21 +304,30 @@ def run_interview_step(
             "prompt_version": PROMPT_VERSION
         }
 
-    evaluation_raw = evaluate_answer(
-        question=question,
-        answer=answer,
-        target_role=target_role,
-        turns=turns
-    )
+    try:
+        evaluation_raw = evaluate_answer(question=question, answer=answer, target_role=target_role, turns=turns)
+    except HTTPException:
+        return {
+            "target_role": target_role, "question": question, "answer": answer,
+            "evaluation": json.dumps({"score": None, "status": "ungraded",
+                "strengths": [], "weaknesses": [],
+                "suggestion": "AI 服务暂不可用，本轮回答已保存但未评分，可导出后复盘。"}, ensure_ascii=False),
+            "followup_question": next_question_after_low_effort(target_role, turns + [{"question": question}]),
+            "warning": "practice_mode", "prompt_version": PROMPT_VERSION
+        }
     evaluation = normalize_evaluation(evaluation_raw)
 
-    followup_question = generate_followup(
-        question=question,
-        answer=answer,
-        evaluation=evaluation,
-        target_role=target_role,
-        turns=turns
-    )
+    try:
+        followup_question = generate_followup(
+            question=question, answer=answer, evaluation=evaluation,
+            target_role=target_role, turns=turns
+        )
+    except HTTPException:
+        followup_question = ""
+    asked = [item.get("question", "") for item in turns] + [question]
+    if (not followup_question or "{" in followup_question or len(followup_question) > 1200
+            or any(SequenceMatcher(None, followup_question, old).ratio() > 0.8 for old in asked)):
+        followup_question = next_question_after_low_effort(target_role, turns + [{"question": question}])
 
     return {
         "target_role": target_role,
@@ -327,3 +345,25 @@ def generate_weakness_report(history_text: str) -> str:
         user_prompt=history_text,
         temperature=0.3
     )
+
+
+def summarize_turns(turns: List[Dict[str, Any]]) -> Dict[str, Any]:
+    reviews = [json.loads(normalize_evaluation(turn.get("evaluation", ""))) for turn in turns]
+    scores = [review["score"] for review in reviews if review["score"] is not None]
+    average = round(sum(scores) / len(scores), 1) if scores else None
+    strengths, weaknesses, suggestions = [], [], []
+    for review in reviews:
+        for key, target in (("strengths", strengths), ("weaknesses", weaknesses)):
+            for item in review[key]:
+                if isinstance(item, str) and item not in target:
+                    target.append(item)
+        suggestion = review.get("suggestion")
+        if isinstance(suggestion, str) and suggestion not in suggestions:
+            suggestions.append(suggestion)
+    score_text = f"已评分 {len(scores)} 轮，平均 {average:g} / 100 分。" if scores else "暂无可用评分。"
+    text = f"本场面试完成 {len(turns)} 轮。{score_text}"
+    for title, items in (("主要优势", strengths), ("主要短板", weaknesses), ("下一步建议", suggestions)):
+        text += f"\n\n{title}：\n" + "\n".join(f"- {item}" for item in items[:5])
+    return {"summary": text, "average_score": average, "score_scale": 100,
+            "scored_turns": len(scores), "turn_count": len(turns),
+            "strengths": strengths[:5], "weaknesses": weaknesses[:5], "suggestions": suggestions[:5]}

@@ -43,6 +43,19 @@ button{
   transition:transform .15s ease,border-color .15s ease,background .15s ease;
 }
 button:hover{transform:translateY(-1px)}
+button:disabled{cursor:not-allowed;opacity:.55;transform:none}
+button{white-space:nowrap}
+*{letter-spacing:0}
+.msg>div:not(.av){min-width:0;overflow-wrap:anywhere}
+.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.connection{padding:10px 14px;border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.6}
+.connection[data-state="error"]{color:var(--danger)}
+.connection[data-state="ok"]{color:var(--ok)}
+.main{grid-template-rows:auto auto minmax(180px,1fr) auto}
+.session-history{padding:12px}
+.session-history label{margin-top:0}
+.side,.console,.main{min-width:0}
+.brand .logo{flex-shrink:0}
 button.secondary{background:#192232;color:var(--text);border-color:var(--line)}
 button.ghost{background:transparent;color:var(--muted);border-color:var(--line)}
 button.full{width:100%}
@@ -72,7 +85,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(61,214,198,.72);box-sh
   box-shadow:0 24px 70px rgba(0,0,0,.35);
 }
 .side,.console{height:calc(100vh - 32px);position:sticky;top:16px;overflow:auto;padding:18px}
-.main{height:calc(100vh - 32px);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
+.main{height:calc(100vh - 32px);display:grid;grid-template-rows:auto auto minmax(180px,1fr) auto;overflow:hidden}
 .brand{display:flex;gap:12px;align-items:center;margin-bottom:18px}
 .logo{
   width:42px;height:42px;border-radius:10px;
@@ -257,16 +270,15 @@ summary::-webkit-details-marker{display:none}
     <input id="api" value="https://selfless-rejoicing-production-4735.up.railway.app"/>
 
     <label for="email">Email</label>
-    <input id="email" value=""/>
-    <div class="hint">默认会生成一次性测试邮箱，避免重复注册误判为系统失败。</div>
+    <input id="email" value="" type="email" autocomplete="username" placeholder="你的邮箱"/>
 
     <label for="pwd">Password</label>
-    <input id="pwd" value="123456" type="password"/>
+    <input id="pwd" type="password" autocomplete="current-password" placeholder="至少 6 个字符"/>
     <button class="secondary full" style="margin-top:10px" onclick="newDemoEmail()">换一个测试邮箱</button>
 
     <div class="row">
-      <button class="secondary" onclick="register()">注册</button>
-      <button onclick="login()">登录</button>
+      <button id="registerBtn" class="secondary" onclick="register()">注册</button>
+      <button id="loginBtn" onclick="login()">登录</button>
     </div>
 
     <label for="role">目标岗位</label>
@@ -278,7 +290,8 @@ summary::-webkit-details-marker{display:none}
       <option>Python后端开发实习生</option>
     </select>
 
-    <button class="full" style="margin-top:12px" onclick="startInterview()">开始面试</button>
+    <button id="startBtn" class="full" style="margin-top:12px" onclick="startInterview()">开始面试</button>
+    <button id="logoutBtn" class="ghost full" style="margin-top:8px" onclick="logout()" hidden>退出登录</button>
 
     <div class="filebox">
       <p>上传知识库 .txt</p>
@@ -292,17 +305,18 @@ summary::-webkit-details-marker{display:none}
   <section class="main panel">
     <div class="top">
       <div>
-        <h2>Mock Interview Session</h2>
-        <p>回答问题后，系统会给出结构化评分、追问和能力短板记录。</p>
+        <h2>模拟面试</h2>
+        <p id="progressLabel">准备开始</p>
       </div>
-      <div style="display:flex;gap:10px;align-items:center">
+      <div class="top-actions">
         <span class="pill"><span class="dot"></span><span id="topStatus">Ready</span></span>
         <button class="secondary" onclick="getSession()">查看记忆</button>
-        <button id="finishBtn" onclick="finishInterview()">结束并总结</button>
+        <button id="finishBtn" onclick="finishInterview()" disabled>结束并总结</button>
       </div>
     </div>
 
-    <div class="chat" id="chat">
+    <div class="connection" id="connection" role="status" aria-live="polite">正在检查服务连接…</div>
+    <div class="chat" id="chat" role="log" aria-live="polite">
       <div class="msg ai">
         <div class="av">AI</div>
         <div class="bubble">你好，我是你的 AI 面试官。登录后选择目标岗位并开始面试，我会根据你的回答进行评分、追问，并记录需要补强的能力点。</div>
@@ -311,8 +325,8 @@ summary::-webkit-details-marker{display:none}
 
     <div class="composer">
       <div class="composer-grid">
-        <textarea id="answer" placeholder="输入你的回答，例如：RAG 是检索增强生成，它会先从知识库检索相关上下文..."></textarea>
-        <button id="sendBtn" onclick="submitAnswer()">发送</button>
+        <textarea id="answer" maxlength="5000" aria-label="面试回答" placeholder="请先登录并开始面试" disabled></textarea>
+        <button id="sendBtn" onclick="submitAnswer()" disabled>发送</button>
       </div>
     </div>
   </section>
@@ -327,6 +341,13 @@ summary::-webkit-details-marker{display:none}
         <div class="metric"><span>Turns</span><b id="turn">0</b></div>
         <div class="metric"><span>Latest Score</span><b id="score">--</b></div>
       </div>
+    </section>
+
+    <section class="console-section session-history">
+      <label for="pastSessions">历史面试</label>
+      <select id="pastSessions"><option value="">登录后查看</option></select>
+      <button id="restoreBtn" class="secondary full" style="margin-top:10px" onclick="restoreSelected()">恢复 / 复盘</button>
+      <button id="exportBtn" class="ghost full" style="margin-top:8px" onclick="exportReview()" disabled>导出复盘</button>
     </section>
 
     <section class="console-section">
@@ -360,6 +381,9 @@ summary::-webkit-details-marker{display:none}
 <script>
 let token="", sessionId=null, turns=0, turnReviews=[];
 let interviewFinished=false, isSubmitting=false, summaryShown=false;
+let busy=false, maxTurns=6, loggedInEmail="", pendingAnswer=null;
+const DEFAULT_API="https://selfless-rejoicing-production-4735.up.railway.app";
+const STORAGE_KEY="interview-progress-v4";
 const $=id=>document.getElementById(id);
 const evaluationFields=[
   ["technical_accuracy","技术准确性"],
@@ -369,8 +393,16 @@ const evaluationFields=[
   ["project_depth","项目深度"]
 ];
 
-function api(){return $("api").value.replace(/\/$/,"")}
-function raw(d){$("raw").textContent=JSON.stringify(d,null,2)}
+function backendUrl(){
+  const u=new URL($("api").value.trim());
+  if(!["http:","https:"].includes(u.protocol)||u.username||u.password)throw new Error("请输入有效的后端网址");
+  return u.href.replace(/\/$/,"");
+}
+function api(){
+  const base=backendUrl();
+  return base===DEFAULT_API&&location.hostname.endsWith(".vercel.app")?"/api":base;
+}
+function raw(d){$("raw").textContent=JSON.stringify(d,(key,value)=>key==="access_token"?"[hidden]":value,2)}
 function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
 function makeDemoEmail(){
   const stamp=new Date().toISOString().replace(/\D/g,"").slice(0,14);
@@ -382,13 +414,30 @@ function newDemoEmail(){
 }
 function status(t){
   $("topStatus").textContent=t;
-  $("status").innerHTML=`Status: ${esc(t)}<br>Token: ${token?esc(token.slice(0,24))+"...":"none"}<br>Session: ${sessionId||"none"}`;
+  $("status").textContent=`${t} · ${token?"已登录":"未登录"} · 面试 ${sessionId||"未开始"}`;
 }
 function scrollChat(){$("chat").scrollTop=$("chat").scrollHeight}
 function setComposerEnabled(enabled){
   $("answer").disabled=!enabled;
   $("sendBtn").disabled=!enabled;
-  $("sendBtn").textContent=enabled?"发送":"已结束";
+  $("sendBtn").textContent=interviewFinished?"已结束":"发送";
+}
+function updateControls(){
+  const active=!!token&&!!sessionId&&!interviewFinished;
+  setComposerEnabled(active&&!busy);
+  $("startBtn").disabled=busy||!token||active;
+  $("finishBtn").disabled=busy||!active||!turns;
+  $("finishBtn").textContent=interviewFinished?"已结束":"结束并总结";
+  $("registerBtn").disabled=busy;
+  $("loginBtn").disabled=busy;
+  $("restoreBtn").disabled=busy||!token;
+  $("logoutBtn").hidden=!token;
+  $("logoutBtn").disabled=busy;
+  $("exportBtn").disabled=!turnReviews.length;
+  $("api").disabled=busy||!!token;
+  $("role").disabled=busy||active;
+  $("answer").placeholder=interviewFinished?"本场面试已结束，可以导出复盘或开始新面试":active?"输入你的回答；不会时可以直接说不知道":"请先登录并开始面试";
+  $("progressLabel").textContent=sessionId?`${$("role").value} · 已完成 ${turns} / ${maxTurns} 题${interviewFinished?" · 已结束":""}`:"准备开始";
 }
 function setSubmitting(submitting){
   isSubmitting=submitting;
@@ -407,7 +456,9 @@ function addMessage(role,content,{html=false,error=false}={}){
 }
 function normalizeError(err){
   const text=String(err?.message||err||"");
-  if(text.includes("Failed to fetch"))return "无法连接后端，请检查 Railway 服务或 API URL";
+  if(/Failed to fetch|NetworkError|Load failed/.test(text))return "无法连接服务，请检查网络后重试。国内网络访问海外站点可能受限。";
+  if(text.includes("AbortError")||err?.name==="AbortError")return "请求超时，回答已保留。请恢复进度确认是否已提交，再重试。";
+  if(text.includes("Invalid email or password"))return "邮箱或密码不正确；如果还没注册，请先注册。";
   if(text.includes("Not authenticated"))return "请先登录";
   if(text.includes("401"))return "登录状态失效，请重新登录";
   if(text.includes("Email already registered"))return "该邮箱已注册，请直接登录；如果想重新注册，请点击“换一个测试邮箱”。";
@@ -415,58 +466,50 @@ function normalizeError(err){
   if(text.includes("string_too_short"))return "输入内容太短，请检查邮箱、密码或回答内容。";
   if(text.includes("string_too_long"))return "输入内容太长，请缩短后再提交。";
   if(text.includes("value_error"))return "输入格式不正确，请检查邮箱、密码或回答内容。";
-  if(text.includes("403"))return "你没有权限执行这个操作";
+  if(text.includes("403"))return "此操作仅对管理员开放";
+  if(text.includes("Application not found"))return "后端服务尚未运行，请稍后重新检查连接。";
+  if(/502|503|504/.test(text))return "服务暂时不可用，可能正在启动，请稍后重试。你的回答已保留。";
+  if(text.includes("409"))return "面试进度已变化，请点击“恢复 / 复盘”同步后再继续。";
   if(text.includes("404"))return "后端没有找到对应资源，请检查 Session 或接口状态";
   if(text.includes("[object Object]"))return "后端返回了异常信息，请查看右侧 Raw Response";
   return text || "操作失败，请稍后再试";
 }
-async function loginSilently(){
-  const h={"Content-Type":"application/json"};
-  const r=await fetch(api()+"/auth/login",{
-    method:"POST",
-    headers:h,
-    body:JSON.stringify({email:$("email").value,password:$("pwd").value})
-  });
-  const d=await r.json().catch(()=>({error:"Non-JSON response"}));
-  raw(d);
-  if(!r.ok)throw new Error(`${r.status} ${typeof d.detail==="string"?d.detail:JSON.stringify(d)}`);
-  token=d.access_token;
-  status("已重新登录");
-  return token;
-}
-async function req(path,method="GET",body=null,isFile=false,skipAuthRetry=false){
+async function req(path,method="GET",body=null,isFile=false){
   const h={};
-  if(!isFile)h["Content-Type"]="application/json";
+  const isPublic=path.startsWith("/auth/")||path==="/health";
+  if(!isPublic&&!token)throw new Error("Not authenticated");
+  if(body&&!isFile)h["Content-Type"]="application/json";
   if(token)h["Authorization"]="Bearer "+token;
-  let r;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),path==="/health"?15000:75000);
   try{
-    r=await fetch(api()+path,{method,headers:h,body:body?(isFile?body:JSON.stringify(body)):null});
-  }catch(e){
-    throw new Error(normalizeError(e));
-  }
-  const d=await r.json().catch(()=>({error:"Non-JSON response"}));
-  raw(d);
-  if(!r.ok){
-    if(r.status===401&&!skipAuthRetry&&!path.startsWith("/auth/")){
-      await loginSilently();
-      return req(path,method,body,isFile,true);
+    const r=await fetch(api()+path,{method,headers:h,cache:"no-store",signal:controller.signal,
+      body:body?(isFile?body:JSON.stringify(body)):null});
+    const d=await r.json().catch(()=>({detail:"服务返回异常，请稍后重试。"}));
+    raw(d);
+    if(!r.ok){
+      if(r.status===401&&!isPublic){token="";status("请重新登录，面试进度已保留");updateControls()}
+      const detail=typeof d.detail==="string"?d.detail:(d.message||JSON.stringify(d.detail||d));
+      const error=new Error(`${r.status} ${detail}`);error.code=r.status;throw error;
     }
-    const detail=typeof d.detail==="string"?d.detail:JSON.stringify(d);
-    throw new Error(`${r.status} ${detail}`);
-  }
-  return d;
+    return d;
+  }finally{clearTimeout(timer)}
 }
 function parseEvaluation(evaluation){
   if(!evaluation)return null;
-  if(typeof evaluation==="object")return evaluation;
+  if(typeof evaluation==="object")return Array.isArray(evaluation)?null:evaluation;
   if(typeof evaluation==="string"){
     const trimmed=evaluation.trim();
-    try{return JSON.parse(trimmed)}catch(_){}
+    try{
+      let parsed=JSON.parse(trimmed);
+      if(typeof parsed==="string")parsed=JSON.parse(parsed);
+      if(parsed&&typeof parsed==="object"&&!Array.isArray(parsed))return parsed;
+    }catch(_){}
     const jsonMatch=trimmed.match(/\{[\s\S]*\}/);
     if(jsonMatch){
       try{return JSON.parse(jsonMatch[0])}catch(_){}
     }
-    return {summary:trimmed};
+    return {summary:trimmed.includes("{")?"本轮评价格式异常，暂无可用评分。":trimmed};
   }
   return {summary:String(evaluation)};
 }
@@ -564,19 +607,20 @@ function renderReviews(){
     : `<div class="review-empty">每轮回答后的评分和优缺点会收纳在这里，主聊天区只保留面试追问。</div>`;
 }
 function saveTurnReview(d){
-  const evaluation=isLowEffortAnswer(d.answer)
-    ? lowEffortEvaluation()
-    : parseEvaluation(d.evaluation)||{};
+  const evaluation=parseEvaluation(d.evaluation)||{};
   $("score").textContent=evaluation.score??"--";
-  turnReviews.push({
+  const review={
     turn: d.turn_count||turnReviews.length+1,
     question: d.answered_question,
     answer: d.answer,
     evaluation
-  });
+  };
+  const existing=turnReviews.findIndex(item=>item.turn===review.turn);
+  if(existing<0)turnReviews.push(review);else turnReviews[existing]=review;
   renderReviews();
 }
 function normalizeScore(value){
+  if(value===null||value===undefined||value===""||typeof value==="boolean")return null;
   const score=Number(value);
   return Number.isFinite(score)?score:null;
 }
@@ -607,7 +651,7 @@ function buildLocalSummary(){
   const suggestions=collectUnique("suggestion");
   const scoreLine=avg===null
     ? "本场面试已完成，系统记录了你的每轮回答。"
-    : `本场面试共完成 ${turns} 轮，平均得分约为 ${avg} 分。`;
+    : `本场面试共完成 ${turns} 轮，已评分题目的平均得分为 ${avg} / 100 分。`;
 
   return [
     scoreLine,
@@ -651,10 +695,94 @@ function showToolResult(title,data){
   if(data&&typeof data==="object"){
     text=data.answer||data.report||data.message||"操作已完成，详细内容可在右侧 Raw Response 查看。";
   }
+  if(typeof text==="string"&&text.trim().startsWith("{")){
+    const parsed=parseEvaluation(text);
+    text=parsed.summary||Object.entries(parsed).filter(([key])=>key!=="score")
+      .map(([key,val])=>`${({main_weaknesses:"主要短板",rag_weaknesses:"RAG 短板",agent_weaknesses:"Agent 短板",backend_weaknesses:"后端短板",recommended_topics:"推荐专题",next_training_plan:"下一步练习"})[key]||key}：${valueText(val)}`).join("\n");
+  }
   text=String(text??"操作已完成，详细内容可在右侧 Raw Response 查看。");
   addMessage("ai",`${title}\n${text}`);
 }
+function savedProgress(){try{return JSON.parse(sessionStorage.getItem(STORAGE_KEY)||"null")}catch(_){return null}}
+function persistProgress(){
+  if(!sessionId||!loggedInEmail)return;
+  try{sessionStorage.setItem(STORAGE_KEY,JSON.stringify({email:loggedInEmail,backend:backendUrl(),
+    sessionId,draft:$("answer").value,pendingAnswer}))}catch(_){}
+}
+function clearInterview(){
+  sessionId=null;turns=0;turnReviews=[];interviewFinished=false;summaryShown=false;pendingAnswer=null;
+  $("sid").textContent="--";$("turn").textContent="0";$("score").textContent="--";
+  $("answer").value="";$("chat").replaceChildren();renderReviews();updateControls();
+}
+async function loadHistory(){
+  const d=await req("/interview/sessions");
+  $("pastSessions").innerHTML='<option value="">选择一场面试</option>'+d.sessions.map(s=>
+    `<option value="${Number(s.session_id)}">${esc(s.target_role)} · ${s.turn_count} 轮 · ${s.status==="finished"?"已结束":"进行中"} · #${Number(s.session_id)}</option>`).join("");
+  if(sessionId)$("pastSessions").value=String(sessionId);
+}
+function showSummary(summary){
+  if(summaryShown)return;
+  interviewFinished=true;summaryShown=true;
+  addMessage("ai",renderFinalSummary(summary),{html:true});status("面试已结束");
+  updateControls();persistProgress();
+}
+function showMode(d){
+  if(d?.warning==="practice_mode"){
+    $("connection").dataset.state="error";
+    $("connection").textContent="题库练习模式 · AI 服务暂不可用。回答会保存，但不生成 AI 分数；明确未作答的题目按规则记 0 分。";
+  }else if(d?.evaluation&&parseEvaluation(d.evaluation)?.score!==null){
+    $("connection").dataset.state="ok";
+    $("connection").textContent="服务已连接 · 本轮评价已记录";
+  }
+}
+async function restoreSession(id){
+  const saved=savedProgress();
+  const d=await req(`/interview/session/${Number(id)}`);
+  clearInterview();sessionId=d.session_id;maxTurns=d.max_turns||6;
+  $("role").value=d.target_role;$("sid").textContent=sessionId;
+  const sameSaved=saved?.email===loggedInEmail&&saved.backend===backendUrl()&&saved.sessionId===sessionId;
+  d.turns.forEach((turn,i)=>{
+    $("chat").insertAdjacentHTML("beforeend",renderNextQuestion(turn.question));
+    addMessage("user",turn.answer);
+    saveTurnReview({answered_question:turn.question,answer:turn.answer,evaluation:turn.evaluation,turn_count:i+1});
+    showMode(turn);
+  });
+  turns=d.turns.length;$("turn").textContent=turns;
+  if(sameSaved){
+    const committed=saved.pendingAnswer&&d.turns.some(t=>t.request_id===saved.pendingAnswer.request_id);
+    pendingAnswer=null;
+    $("answer").value=committed?"":saved.draft||saved.pendingAnswer?.answer||"";
+  }
+  if(d.status==="finished")showSummary(d.summary);
+  else{
+    $("chat").insertAdjacentHTML("beforeend",renderNextQuestion(d.current_question));
+    status("面试进度已恢复");
+  }
+  updateControls();persistProgress();scrollChat();
+}
+async function restoreSelected(){
+  if(busy)return;
+  const id=$("pastSessions").value||sessionId;if(!id)return;
+  busy=true;updateControls();
+  try{await restoreSession(id)}catch(e){addMessage("ai",normalizeError(e),{error:true})}
+  finally{busy=false;updateControls()}
+}
+function logout(){
+  if(busy)return;
+  persistProgress();token="";loggedInEmail="";$("pwd").value="";
+  clearInterview();$("pastSessions").innerHTML='<option value="">登录后查看</option>';
+  status("已退出登录");addMessage("ai","已退出。再次登录后可从历史面试恢复进度。");
+}
+function exportReview(){
+  if(!turnReviews.length)return;
+  const text=[`AI Interview Coach · ${$("role").value}`,buildLocalSummary(),...turnReviews.map(r=>
+    `\n第 ${r.turn} 轮\n问题：${r.question}\n回答：${r.answer}\n得分：${r.evaluation.score??"未评分"}\n优点：${valueText(r.evaluation.strengths)}\n短板：${valueText(r.evaluation.weaknesses)}\n建议：${valueText(r.evaluation.suggestion)}`)].join("\n\n");
+  const url=URL.createObjectURL(new Blob([text],{type:"text/plain;charset=utf-8"}));
+  const link=document.createElement("a");link.href=url;link.download=`interview-${sessionId}-review.txt`;link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 async function register(){
+  if(busy)return;busy=true;updateControls();
   try{
     await req("/auth/register","POST",{email:$("email").value,password:$("pwd").value});
     status("已注册");
@@ -662,19 +790,31 @@ async function register(){
   }catch(e){
     const message=normalizeError(e);
     addMessage("ai",message.includes("已注册")?message:"注册失败："+message,{error:true});
-  }
+  }finally{busy=false;updateControls()}
 }
 async function login(){
+  if(busy)return;busy=true;updateControls();
   try{
     const d=await req("/auth/login","POST",{email:$("email").value,password:$("pwd").value});
     token=d.access_token;
+    loggedInEmail=$("email").value.trim().toLowerCase();
+    const saved=savedProgress();clearInterview();
     status("已登录");
     addMessage("ai","登录成功，可以开始面试。");
+    try{
+      await loadHistory();
+      if(saved?.email===loggedInEmail&&saved.backend===backendUrl()&&saved.sessionId)await restoreSession(saved.sessionId);
+    }catch(e){addMessage("ai","历史进度暂时无法读取，可稍后重试。",{error:true})}
   }catch(e){addMessage("ai","登录失败："+normalizeError(e),{error:true})}
+  finally{busy=false;updateControls()}
 }
 async function startInterview(){
+  if(busy||!token)return;
+  if(sessionId&&!interviewFinished)return;
+  busy=true;updateControls();status("正在准备面试");
   try{
     const d=await req("/interview/start","POST",{target_role:$("role").value});
+    clearInterview();maxTurns=d.max_turns||6;
     sessionId=d.session_id;
     turns=0;
     turnReviews=[];
@@ -688,83 +828,94 @@ async function startInterview(){
     $("finishBtn").disabled=false;
     $("finishBtn").textContent="结束并总结";
     status("面试进行中");
-    addMessage("ai",d.first_question||"面试已开始，请回答第一题。");
-  }catch(e){addMessage("ai","开始面试失败："+normalizeError(e),{error:true})}
+    $("chat").insertAdjacentHTML("beforeend",renderNextQuestion(d.first_question));
+    showMode(d);persistProgress();
+    try{await loadHistory()}catch(_){status("面试进行中，历史列表暂不可用")}
+  }catch(e){addMessage("ai","开始面试失败："+normalizeError(e),{error:true});status("开始失败，可重试")}
+  finally{busy=false;updateControls()}
 }
-async function health(){
+async function health(silent=false){
+  const connection=$("connection");connection.textContent="正在检查服务连接…";connection.dataset.state="";
   try{
     const d=await req("/health");
-    showToolResult("后端健康检查",`状态：${d.status||"--"}\n知识库数量：${d.knowledge_count??"--"}\nPrompt版本：${d.prompt_version||"--"}`);
-  }catch(e){addMessage("ai","健康检查失败："+normalizeError(e),{error:true})}
+    maxTurns=d.max_turns||6;
+    connection.dataset.state="ok";
+    connection.textContent=`服务已连接 · ${d.knowledge_count} 条公共知识 · ${d.retrieval_mode==="lexical"?"轻量知识检索":"向量知识检索"}`;
+    if(["unconfigured","unavailable","insufficient_balance"].includes(d.llm_mode))showMode({warning:"practice_mode"});
+    if(d.llm_mode==="test")connection.textContent+=" · 测试模式，非真实 AI 评分";
+    if(!silent)showToolResult("连接检查",connection.textContent);
+    return true;
+  }catch(e){
+    connection.dataset.state="error";connection.textContent=normalizeError(e)+" 可点击 Health Check 重新检查。";
+    return false;
+  }
 }
 async function submitAnswer(){
   const ans=$("answer").value.trim();
   if(interviewFinished){
     return addMessage("ai","本场面试已结束。请点击“开始面试”开启新一场。");
   }
-  if(isSubmitting)return;
+  if(isSubmitting||busy)return;
   if(!ans)return addMessage("ai","请先输入你的回答。",{error:true});
   if(!sessionId)return addMessage("ai","请先开始面试。",{error:true});
-  addMessage("user",ans);
-  $("answer").value="";
-  setSubmitting(true);
+  if(!pendingAnswer)pendingAnswer={session_id:Number(sessionId),answer:ans,expected_turn:turns,request_id:crypto.randomUUID()};
+  if(pendingAnswer.answer!==ans)return addMessage("ai","上一条回答的提交状态尚未确认，请先恢复进度，再编辑或提交。",{error:true});
+  persistProgress();busy=true;setSubmitting(true);updateControls();status("正在记录回答");
   try{
-    const d=await req("/interview/session_step","POST",{session_id:Number(sessionId),answer:ans});
+    const d=await req("/interview/session_step","POST",pendingAnswer);
+    addMessage("user",ans);$("answer").value="";pendingAnswer=null;
     turns=d.turn_count||turns+1;
     $("turn").textContent=turns;
     const next=d.followup_question||d.next_question||"";
     saveTurnReview(d);
     if(turns===1){
       addMessage("ai","已记录。本轮评分和优缺点已放到右侧 Question Reviews。");
-    }else{
-      addMessage("ai","已记录。");
     }
     const nextHtml=renderNextQuestion(next);
     if(nextHtml){
       $("chat").insertAdjacentHTML("beforeend",nextHtml);
       scrollChat();
     }
+    showMode(d);persistProgress();
+    if(d.status==="finished")showSummary(d.summary);
+    else status("面试进行中");
   }catch(e){
     $("answer").value=ans;
+    if(e.code&&![401,409,502,503,504].includes(e.code))pendingAnswer=null;
+    persistProgress();status("回答尚未确认，请重试或恢复进度");
     addMessage("ai","提交失败："+normalizeError(e),{error:true});
   }finally{
-    setSubmitting(false);
+    busy=false;setSubmitting(false);updateControls();
   }
 }
 async function finishInterview(){
+  if(busy)return;
   if(!sessionId)return addMessage("ai","当前还没有 Session，请先开始面试。",{error:true});
   if(!turns)return addMessage("ai","至少完成一轮回答后，再生成综合评价。",{error:true});
   if(summaryShown)return addMessage("ai","综合评价已经生成。请点击“开始面试”开启新一场。");
 
-  summaryShown=true;
-  interviewFinished=true;
-  addMessage("ai",renderFinalSummary(),{html:true});
-  setComposerEnabled(false);
-  $("finishBtn").disabled=true;
-  $("finishBtn").textContent="已结束";
-  status("面试已结束");
-
+  if(pendingAnswer)return addMessage("ai","还有一条回答未确认，请先恢复面试进度再结束。",{error:true});
+  busy=true;updateControls();status("正在保存总结");
   try{
-    await req(`/interview/session/${sessionId}/finish`,"POST");
+    const d=await req(`/interview/session/${sessionId}/finish`,"POST");
+    showSummary(d);
   }catch(e){
-    raw({
-      warning: "finish_session_failed",
-      message: normalizeError(e)
-    });
-  }
+    status("总结尚未保存");
+    addMessage("ai","结束失败："+normalizeError(e)+" 可再次点击结束，或先导出复盘。",{error:true});
+  }finally{busy=false;updateControls()}
 }
 async function getSession(){
   if(!sessionId)return addMessage("ai","当前还没有 Session，请先开始面试。",{error:true});
-  try{
-    const d=await req(`/interview/session/${sessionId}`);
-    const count=Array.isArray(d.turns)?d.turns.length:0;
-    showToolResult("Session 记忆已读取",`当前记录 ${count} 轮对话。详细内容可在右侧 Raw Response 查看。`);
-  }catch(e){addMessage("ai","读取 Session 失败："+normalizeError(e),{error:true})}
+  if(busy)return;
+  busy=true;updateControls();
+  try{await restoreSession(sessionId)}catch(e){addMessage("ai",normalizeError(e),{error:true})}
+  finally{busy=false;updateControls()}
 }
 async function askRag(){
   try{
-    const d=await req("/ask","POST",{question:"什么是RAG？"});
+    const d=await req("/ask","POST",{question:$("answer").value.trim()||"什么是RAG？"});
     showToolResult("RAG 回答",d.answer||d);
+    showMode(d);
   }catch(e){addMessage("ai","RAG 查询失败："+normalizeError(e),{error:true})}
 }
 async function agentRouter(){
@@ -773,6 +924,7 @@ async function agentRouter(){
   try{
     const d=await req("/agent/tool-call","POST",{intent,question:typed||null,session_id:sessionId});
     const result=d.result||{};
+    showMode(result);
     let detail="";
 
     if(d.selected_tool==="retrieval_eval"){
@@ -791,7 +943,7 @@ async function agentRouter(){
     }else if(d.selected_tool==="logs"){
       detail=(result.logs||[]).slice(-5).map(item=>{
         if(typeof item==="string")return item;
-        return item.message||item.msg||item.text||JSON.stringify(item);
+        return item.message||item.msg||item.text||`${item.time||""} ${item.event_type||"系统事件"}`;
       }).join("\n")||"暂无日志。";
     }
 
@@ -845,7 +997,11 @@ async function uploadKnowledge(){
 if(location.protocol==="file:"){
   $("runNote").style.display="block";
 }
-newDemoEmail();
+$("answer").addEventListener("input",persistProgress);
+$("api").addEventListener("change",()=>{logout();health(true)});
+const previous=savedProgress();
+if(previous){$("email").value=previous.email||"";$("api").value=previous.backend||DEFAULT_API;status("登录后可恢复上次面试")}
+updateControls();health(true);
 </script>
 </body>
 </html>

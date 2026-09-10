@@ -78,8 +78,10 @@ class FollowUpRequest(BaseModel):
 
 
 class SessionStepRequest(BaseModel):
-    session_id: int
+    session_id: int = Field(..., gt=0)
     answer: str = Field(..., min_length=1, max_length=5000)
+    request_id: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    expected_turn: Optional[int] = Field(default=None, ge=0)
 
     @field_validator("answer")
     @classmethod
