@@ -37,7 +37,7 @@ The evaluation set uses expected keywords: historical Recall@1/3/5 fields are ke
 
 ## PostgreSQL
 
-Set `DATABASE_URL` to a PostgreSQL URL for a higher-concurrency deployment. `postgres://` and `postgresql://` are normalized to the installed psycopg driver. Alembic preserves percent-escaped passwords. CI runs the API tests against PostgreSQL 16 and a fresh SQLite database.
+Set `DATABASE_URL` to a PostgreSQL URL for a higher-concurrency deployment. `postgres://` and `postgresql://` are normalized to the installed psycopg driver. Alembic preserves percent-escaped passwords. To verify a provisioned test database, set `TEST_DATABASE_URL` and run pytest. The current hosted configuration and completed deployment tests use SQLite.
 
 Changing the URL does not move old data. Back up the SQLite database and verify a separate data transfer before switching a populated service.
 

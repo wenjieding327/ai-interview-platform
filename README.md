@@ -13,7 +13,7 @@ The hosted demo uses persistent SQLite storage and real BM25 keyword retrieval t
 - Request IDs and optimistic concurrency protect retries and simultaneous submissions.
 - Re-login restores saved sessions and the current tab's draft. Passwords and JWTs are not persisted in browser storage.
 - Uploaded knowledge is scoped to its owner. Only `ADMIN_EMAILS` can read system logs.
-- CI includes backend tests, a PostgreSQL lane, and local Playwright tests without live LLM credits.
+- Backend tests run in GitHub Actions. Playwright validates browser recovery locally and in explicit cloud smoke tests, without requiring paid model evaluations.
 
 See [Operations](docs/OPERATIONS.md) for deployment, recovery, retrieval modes, and limitations.
 
