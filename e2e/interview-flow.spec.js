@@ -118,3 +118,22 @@ test("expired login preserves draft and allows re-login without losing the sessi
   await page.locator("#sendBtn").click();
   await expect(page.locator("#turn")).toHaveText("1");
 });
+
+test("slow history loading never exposes a send button that ignores clicks", async ({ page }) => {
+  let releaseHistory;
+  const held = new Promise(resolve => { releaseHistory = resolve; });
+  let lists = 0;
+  await page.route("**/interview/sessions", async route => {
+    lists++;
+    if (lists === 2) await held;
+    await route.continue();
+  });
+  const ready = signIn(page);
+  await expect(page.locator("#sid")).not.toHaveText("--");
+  await expect(page.locator("#sendBtn")).toBeDisabled();
+  releaseHistory();
+  await ready;
+  await page.locator("#answer").fill("不知道");
+  await page.locator("#sendBtn").click();
+  await expect(page.locator("#turn")).toHaveText("1");
+});

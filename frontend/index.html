@@ -824,9 +824,7 @@ async function startInterview(){
     $("turn").textContent=turns;
     $("score").textContent="--";
     renderReviews();
-    setComposerEnabled(true);
-    $("finishBtn").disabled=false;
-    $("finishBtn").textContent="结束并总结";
+    updateControls();
     status("面试进行中");
     $("chat").insertAdjacentHTML("beforeend",renderNextQuestion(d.first_question));
     showMode(d);persistProgress();
